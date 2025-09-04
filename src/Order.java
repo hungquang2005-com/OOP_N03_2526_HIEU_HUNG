@@ -1,31 +1,47 @@
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Order {
-    private List<Food> items;
+    private int orderID;
+    private Date orderDate;
+    private String status;
+    private List<OrderDetail> orderDetails;
 
-    public Order() {
-        items = new ArrayList<>();
+    public Order(int orderID, Date orderDate, String status) {
+        this.orderID = orderID;
+        this.orderDate = orderDate;
+        this.status = status;
+        this.orderDetails = new ArrayList<>();
     }
 
-    public void addFood(Food food) {
-        items.add(food);
+    public int getOrderID() {
+        return orderID;
     }
 
-    public double getTotal() {
+    public Date getOrderDate() {
+        return orderDate;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public List<OrderDetail> getOrderDetails() {
+        return orderDetails;
+    }
+
+    public void addOrderDetail(OrderDetail detail) {
+        orderDetails.add(detail);
+    }
+
+    public double calculateTotal() {
         double total = 0;
-        for (Food f : items) {
-            total += f.getPrice();
+        for (OrderDetail detail : orderDetails) {
+            total += detail.subTotal();
         }
         return total;
     }
-
-    public void showOrder() {
-        System.out.println("Đơn hàng:");
-        for (Food f : items) {
-            System.out.println(f);
-        }
-        System.out.println("Tổng tiền: " + getTotal() + " VND");
-    }
 }
+
 
