@@ -27,4 +27,22 @@ public class Category {
     public void addFood(Food food) {
         foods.add(food);
     }
+
+    public void printFoodsRecursive(int index) {
+        if (index >= foods.size()) {
+            return;
+        }
+        System.out.println("- " + foods.get(index).getName());
+        printFoodsRecursive(index + 1);
+    }
+
+    public Food findFoodByNameRecursive(String name, int index) {
+        if (index >= foods.size()) {
+            return null; 
+        }
+        if (foods.get(index).getName().equalsIgnoreCase(name)) {
+            return foods.get(index); 
+        }
+        return findFoodByNameRecursive(name, index + 1);
+    }
 }

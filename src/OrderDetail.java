@@ -1,4 +1,3 @@
-
 public class OrderDetail {
     private Food food;
     private int quantity;

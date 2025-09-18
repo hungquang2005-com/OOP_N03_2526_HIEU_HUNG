@@ -24,7 +24,7 @@ public class RestaurantManagement {
         System.out.println("=== Restaurant Report ===");
         for (Order order : orders) {
             System.out.println("Order ID: " + order.getOrderID() +
-                    ", Total: " + order.calculateTotal() +
+                    ", Total: " + order.getTotal() + 
                     ", Status: " + order.getStatus());
         }
     }
@@ -37,3 +37,4 @@ public class RestaurantManagement {
         return orders;
     }
 }
+
