@@ -1,9 +1,15 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class User extends Person implements PeopleInterface {
     private String userName;
     private String password;
     private String role;
 
-    // Constructor chính: chỉ cần username, password, role
+    // Lưu trữ CRUD
+    private static List<User> users = new ArrayList<>();
+
+    // Constructor chính
     public User(String userName, String password, String role) {
         super("", "", "");
         this.userName = userName;
@@ -11,7 +17,7 @@ public class User extends Person implements PeopleInterface {
         this.role = role;
     }
 
-    // Constructor đầy đủ: bao gồm thông tin cá nhân
+    // Constructor đầy đủ
     public User(String userName, String password, String role, String identity, String fullName, String dateOfBirth) {
         super(identity, fullName, dateOfBirth);
         this.userName = userName;
@@ -22,7 +28,7 @@ public class User extends Person implements PeopleInterface {
     // Implement từ PeopleInterface
     @Override
     public void setInfon(String identity, String fullName, String dateOfBirth) {
-        super.setInfon(identity, fullName, dateOfBirth); 
+        super.setInfon(identity, fullName, dateOfBirth);
     }
 
     @Override
@@ -37,17 +43,41 @@ public class User extends Person implements PeopleInterface {
         return "Không tìm thấy thông tin user với Identity: " + identity;
     }
 
-    // Getter
     public String getUserName() { return userName; }
     public String getPassword() { return password; }
     public String getRole() { return role; }
 
-    // Login/Logout
-    public void login() {
-        System.out.println(userName + " logged in.");
+    public void setPassword(String password) { this.password = password; }
+    public void setRole(String role) { this.role = role; }
+
+    public void login() { System.out.println(userName + " logged in."); }
+    public void logout() { System.out.println(userName + " logged out."); }
+
+    // ========== CRUD ==========
+    public static void create(User u) {
+        users.add(u);
     }
 
-    public void logout() {
-        System.out.println(userName + " logged out.");
+    public static List<User> readAll() {
+        return users;
+    }
+
+    public static User readByUsername(String username) {
+        for (User u : users) {
+            if (u.getUserName().equals(username)) return u;
+        }
+        return null;
+    }
+
+    public static void update(String username, String newPass, String newRole) {
+        User u = readByUsername(username);
+        if (u != null) {
+            u.setPassword(newPass);
+            u.setRole(newRole);
+        }
+    }
+
+    public static void delete(String username) {
+        users.removeIf(u -> u.getUserName().equals(username));
     }
 }
