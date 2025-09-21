@@ -73,6 +73,12 @@ src/
 - **Update**: Chọn món ăn → Nhập thông tin mới → Cập nhật.
 - **Delete**: Chọn món ăn → Xác nhận → Xóa khỏi danh sách.
 
+### 2. Order
+- **Create**: Tạo đơn hàng mới → Thêm chi tiết món ăn → Tính tổng tiền.
+- **Read**: Hiển thị thông tin đơn hàng theo ID.
+- **Update**: Cập nhật trạng thái đơn hàng hoặc chi tiết.
+- **Delete**: Xóa đơn hàng khỏi danh sách.
+
 ### 3. User
 - **Create**: Tạo tài khoản mới (username, password, role).
 - **Read**: Xem thông tin user theo Identity hoặc username.
@@ -85,6 +91,9 @@ src/
 
 ### Food – CRUD
 ![Food Activity Diagram](doc/Food.png)
+
+### Order - CRUD
+![Order Activity Diagram](doc/Order.png)
 
 ### User – CRUD
 ![User Activity Diagram](doc/User.png)
