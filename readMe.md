@@ -65,7 +65,7 @@ src/
 
 ![Mô tả ảnh](./doc/yeucau3.png)
  
-## 🛠️ CRUD cho 2 đối tượng
+## 🛠️ CRUD cho 3 đối tượng
 
 ### 1. Food
 - **Create**: Nhập thông tin món ăn → Kiểm tra hợp lệ → Tạo mới → Lưu vào danh sách.
