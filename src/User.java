@@ -5,6 +5,7 @@ public class User extends Person implements PeopleInterface {
     private String userName;
     private String password;
     private String role;
+    private String loginDate; // thời gian đăng nhập
 
     // Lưu trữ CRUD
     private static List<User> users = new ArrayList<>();
@@ -18,7 +19,8 @@ public class User extends Person implements PeopleInterface {
     }
 
     // Constructor đầy đủ
-    public User(String userName, String password, String role, String identity, String fullName, String dateOfBirth) {
+    public User(String userName, String password, String role,
+                String identity, String fullName, String dateOfBirth) {
         super(identity, fullName, dateOfBirth);
         this.userName = userName;
         this.password = password;
@@ -38,20 +40,31 @@ public class User extends Person implements PeopleInterface {
                    ", FullName: " + super.getFullName() +
                    ", DOB: " + super.getDateOfBirth() +
                    ", Identity: " + super.getIdentity() +
-                   ", Role: " + role;
+                   ", Role: " + role +
+                   ", LoginDate: " + loginDate;
         }
         return "Không tìm thấy thông tin user với Identity: " + identity;
     }
 
+    // Getter & Setter
     public String getUserName() { return userName; }
     public String getPassword() { return password; }
     public String getRole() { return role; }
+    public String getDate() { return loginDate; }
 
     public void setPassword(String password) { this.password = password; }
     public void setRole(String role) { this.role = role; }
+    public void setDate(String loginDate) { this.loginDate = loginDate; }
 
-    public void login() { System.out.println(userName + " logged in."); }
-    public void logout() { System.out.println(userName + " logged out."); }
+    // Login & Logout
+    public void login() {
+        this.loginDate = Time.layThoiGianHienTai(); // dùng class Time
+        System.out.println(userName + " logged in at " + loginDate);
+    }
+
+    public void logout() {
+        System.out.println(userName + " logged out.");
+    }
 
     // ========== CRUD ==========
     public static void create(User u) {
