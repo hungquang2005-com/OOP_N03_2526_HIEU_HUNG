@@ -1,5 +1,14 @@
 import java.util.*;
 
+import practice.Food;
+import practice.ListOfUser;
+import practice.Order;
+import practice.OrderDetail;
+import practice.Payment;
+import practice.RestaurantManagement;
+import practice.Table;
+import practice.User;
+
 public class Test {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);

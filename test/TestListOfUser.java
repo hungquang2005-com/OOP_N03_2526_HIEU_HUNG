@@ -1,3 +1,6 @@
+import practice.ListOfUser;
+import practice.User;
+
 public class TestListOfUser {
     public static void main(String[] args) {
         ListOfUser listOfUser = new ListOfUser();

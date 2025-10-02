@@ -1,3 +1,6 @@
+import practice.Category;
+import practice.Food;
+
 public class Testdequy {
     public static void main(String[] args) {
         

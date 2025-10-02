@@ -1,5 +1,7 @@
 import java.util.Date;
 
+import practice.Time;
+
 public class TestTime {
     public static void main(String[] args) throws InterruptedException {
         

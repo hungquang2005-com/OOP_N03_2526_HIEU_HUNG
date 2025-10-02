@@ -1,3 +1,5 @@
+import practice.User;
+
 public class TestUser {
     public static void main(String[] args) {
         User user1 = new User("hungquang2005", "12345", "Quản lý");
