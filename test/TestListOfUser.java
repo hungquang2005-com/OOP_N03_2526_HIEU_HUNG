@@ -1,3 +1,6 @@
+import model.ListOfUser;
+import model.User;
+
 public class TestListOfUser {
     public static void main(String[] args) {
         ListOfUser listOfUser = new ListOfUser();

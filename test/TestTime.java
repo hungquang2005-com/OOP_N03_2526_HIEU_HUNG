@@ -1,5 +1,7 @@
 import java.util.Date;
 
+import model.Time;
+
 public class TestTime {
     public static void main(String[] args) throws InterruptedException {
         

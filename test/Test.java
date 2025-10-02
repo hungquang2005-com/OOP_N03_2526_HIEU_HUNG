@@ -1,5 +1,14 @@
 import java.util.*;
 
+import model.Food;
+import model.ListOfUser;
+import model.Order;
+import model.OrderDetail;
+import model.Payment;
+import model.RestaurantManagement;
+import model.Table;
+import model.User;
+
 public class Test {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -330,7 +339,6 @@ public class Test {
         } 
         sc.close();
     }
-
 
     private static void printInvoice(Order order) {
         System.out.println("\n=== HÓA ĐƠN CHÍNH THỨC ===");

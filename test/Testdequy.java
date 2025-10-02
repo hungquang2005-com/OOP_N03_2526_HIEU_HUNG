@@ -1,3 +1,6 @@
+import model.Category;
+import model.Food;
+
 public class Testdequy {
     public static void main(String[] args) {
         
