@@ -1,4 +1,5 @@
-import Interfaces.MyCat;
+import Interfaces;
+
 
 public class Main1 {
     public static void main(String[] args) {
