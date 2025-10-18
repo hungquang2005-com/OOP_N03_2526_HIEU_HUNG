@@ -1,15 +1,12 @@
 package com.example.demo.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Food {
     private int foodID;
     private String name;
     private double price;
     private String description;
 
-    private static List<Food> foods = new ArrayList<>();
+    public Food() {}
 
     public Food(int foodID, String name, double price, String description) {
         this.foodID = foodID;
@@ -23,32 +20,18 @@ public class Food {
     public double getPrice() { return price; }
     public String getDescription() { return description; }
 
+    public void setFoodID(int foodID) { this.foodID = foodID; }
     public void setName(String name) { this.name = name; }
     public void setPrice(double price) { this.price = price; }
     public void setDescription(String description) { this.description = description; }
 
-    // ========== CRUD ==========
-    public static void create(Food food) {
-        foods.add(food);
-    }
-
-    public static List<Food> readAll() {
-        return foods;
-    }
-
-    public static Food readById(int id) {
-        for (Food f : foods) {
-            if (f.getFoodID() == id) return f;
-        }
-        return null;
-    }
-
-    public static void update(int id, String newName, double newPrice, String newDesc) {
-        Food f = readById(id);
-        if (f != null) {
-            f.setName(newName);
-            f.setPrice(newPrice);
-            f.setDescription(newDesc);
-        }
+    @Override
+    public String toString() {
+        return "Food{" +
+                "foodID=" + foodID +
+                ", name='" + name + '\'' +
+                ", price=" + price +
+                ", description='" + description + '\'' +
+                '}';
     }
 }

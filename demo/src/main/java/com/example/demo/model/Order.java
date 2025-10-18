@@ -3,30 +3,38 @@ package com.example.demo.model;
 import java.util.*;
 
 public class Order {
-    private int orderID;
+    private int orderId;
     private Date orderDate;
     private String status;
     private List<OrderDetail> orderDetails;
-    private double total; 
+    private double total;
 
-    private static List<Order> orders = new ArrayList<>();
+    public Order() {
+        this.orderDetails = new ArrayList<>();
+    }
 
-    public Order(int orderID, Date orderDate, String status) {
-        this.orderID = orderID;
+    public Order(int orderId, Date orderDate, String status) {
+        this.orderId = orderId;
         this.orderDate = orderDate;
         this.status = status;
         this.orderDetails = new ArrayList<>();
         this.total = 0;
     }
 
-    public int getOrderID() { return orderID; }
+    public int getOrderId() { return orderId; }
     public Date getOrderDate() { return orderDate; }
     public String getStatus() { return status; }
     public List<OrderDetail> getOrderDetails() { return orderDetails; }
     public double getTotal() { return total; }
 
-    public void setTotal(double total) { this.total = total; }
+    public String getFormattedOrderDate() {
+        return Time.dinhDang(orderDate);
+    }
+
+    public void setOrderId(int orderId) { this.orderId = orderId; }
+    public void setOrderDate(Date orderDate) { this.orderDate = orderDate; }
     public void setStatus(String status) { this.status = status; }
+    public void setTotal(double total) { this.total = total; }
 
     public void addOrderDetail(OrderDetail detail) {
         orderDetails.add(detail);
@@ -41,26 +49,14 @@ public class Order {
         return sum;
     }
 
-    // ========== CRUD ==========
-    public static void create(Order o) {
-        orders.add(o);
-    }
-
-    public static List<Order> readAll() {
-        return orders;
-    }
-
-    public static Order readById(int id) {
-        for (Order o : orders) {
-            if (o.getOrderID() == id) return o;
-        }
-        return null;
-    }
-
-    public static void update(int id, String newStatus) {
-        Order o = readById(id);
-        if (o != null) {
-            o.setStatus(newStatus);
-        }
+    @Override
+    public String toString() {
+        return "Order{" +
+                "orderId=" + orderId +
+                ", orderDate=" + Time.dinhDang(orderDate) + // ✅ Dùng Time
+                ", status='" + status + '\'' +
+                ", total=" + total +
+                ", itemCount=" + orderDetails.size() +
+                '}';
     }
 }

@@ -1,89 +1,53 @@
 package com.example.demo.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class User extends Person implements PeopleInterface {
-    private String userName;
+public class User {
+    private String username;
     private String password;
     private String role;
-    private String loginDate;
+    private boolean loggedIn;
+    private String loginDate; 
 
-    private static List<User> users = new ArrayList<>();
+    public User() {
+        this.loggedIn = false;
+    }
 
-    public User(String userName, String password, String role) {
-        super("", "", "");
-        this.userName = userName;
+    public User(String username, String password, String role) {
+        this.username = username;
         this.password = password;
         this.role = role;
+        this.loggedIn = false;
     }
 
-    public User(String userName, String password, String role,
-                String identity, String fullName, String dateOfBirth) {
-        super(identity, fullName, dateOfBirth);
-        this.userName = userName;
-        this.password = password;
-        this.role = role;
-    }
-
-    @Override
-    public void setInfon(String identity, String fullName, String dateOfBirth) {
-        super.setInfon(identity, fullName, dateOfBirth);
-    }
-
-    @Override
-    public String getInfo(String identity) {
-        if (super.getIdentity() != null && super.getIdentity().equals(identity)) {
-            return "Username: " + userName +
-                   ", FullName: " + super.getFullName() +
-                   ", DOB: " + super.getDateOfBirth() +
-                   ", Identity: " + super.getIdentity() +
-                   ", Role: " + role +
-                   ", LoginDate: " + loginDate;
-        }
-        return "Không tìm thấy thông tin user với Identity: " + identity;
-    }
-
-    public String getUserName() { return userName; }
+    public String getUsername() { return username; }
     public String getPassword() { return password; }
     public String getRole() { return role; }
-    public String getDate() { return loginDate; }
+    public boolean isLoggedIn() { return loggedIn; }
+    public String getLoginDate() { return loginDate; }
 
+    public void setUsername(String username) { this.username = username; }
     public void setPassword(String password) { this.password = password; }
     public void setRole(String role) { this.role = role; }
-    public void setDate(String loginDate) { this.loginDate = loginDate; }
+    public void setLoggedIn(boolean loggedIn) { this.loggedIn = loggedIn; }
+    public void setLoginDate(String loginDate) { this.loginDate = loginDate; }
 
     public void login() {
-        // Giả sử có một lớp Time để lấy thời gian, bạn cần tạo lớp này
-        // this.loginDate = Time.layThoiGianHienTai(); 
-        System.out.println(userName + " logged in at " + loginDate);
+        this.loggedIn = true;
+        this.loginDate = Time.layThoiGianHienTai();
+        System.out.println(username + " logged in at " + loginDate);
     }
 
     public void logout() {
-        System.out.println(userName + " logged out.");
+        this.loggedIn = false;
+        System.out.println(username + " logged out at " + Time.layThoiGianHienTai()); 
     }
 
-    // ========== CRUD ==========
-    public static void create(User u) {
-        users.add(u);
-    }
-
-    public static List<User> readAll() {
-        return users;
-    }
-
-    public static User readByUsername(String username) {
-        for (User u : users) {
-            if (u.getUserName().equals(username)) return u;
-        }
-        return null;
-    }
-
-    public static void update(String username, String newPass, String newRole) {
-        User u = readByUsername(username);
-        if (u != null) {
-            u.setPassword(newPass);
-            u.setRole(newRole);
-        }
+    @Override
+    public String toString() {
+        return "User{" +
+                "username='" + username + '\'' +
+                ", role='" + role + '\'' +
+                ", loggedIn=" + loggedIn +
+                ", loginDate='" + loginDate + '\'' +
+                '}';
     }
 }
