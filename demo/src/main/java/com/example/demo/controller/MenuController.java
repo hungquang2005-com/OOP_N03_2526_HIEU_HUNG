@@ -26,6 +26,7 @@ public class MenuController {
         menu.add(new Food(8, "Miến Gà", 45000, "Miến gà thanh đạm"));
         menu.add(new Food(9, "Cháo Lòng", 35000, "Cháo lòng nóng hổi"));
         menu.add(new Food(10, "Hủ Tiếu Nam Vang", 50000, "Hủ tiếu Nam Vang"));
+        menu.add(new Food(11, "Cháo lòng tiết canh", 15000, "cháo ngon"));
     }
 
     // ========== CREATE ==========

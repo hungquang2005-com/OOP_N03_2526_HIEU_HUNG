@@ -1,5 +1,6 @@
 {
   "java.project.sourcePaths": ["src", "test"],
   "java.project.outputPath": "bin",
-  "java.project.referencedLibraries": []
+  "java.project.referencedLibraries": [],
+  "java.compile.nullAnalysis.mode": "automatic"
 }
