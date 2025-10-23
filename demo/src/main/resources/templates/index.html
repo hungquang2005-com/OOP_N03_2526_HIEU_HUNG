@@ -9,7 +9,6 @@
 </head>
 <body>
 
-<!-- Navigation -->
 <header data-bs-theme="dark">
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
     <div class="container-fluid">
@@ -29,9 +28,13 @@
             <a class="nav-link" href="#" onclick="showPage('order')">Đặt Hàng</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('pending')">🕐 Chờ Thanh Toán</a>
+          </li>
+          <li class="nav-item">
             <a class="nav-link" href="#" onclick="showPage('history')">Lịch Sử</a>
           </li>
         </ul>
+        
         <div id="authSection" class="auth-buttons">
           <button class="btn btn-outline-light" onclick="showPage('login')">Đăng Nhập</button>
           <button class="btn btn-light" onclick="showPage('register')">Đăng Ký</button>
@@ -45,7 +48,6 @@
   </nav>
 </header>
 
-<!-- HOME PAGE -->
 <div id="homePage" class="page active">
   <div id="myCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
@@ -129,7 +131,6 @@
   </div>
 </div>
 
-<!-- REGISTER PAGE -->
 <div id="registerPage" class="page">
   <div class="content-section">
     <div class="auth-container">
@@ -161,7 +162,6 @@
   </div>
 </div>
 
-<!-- LOGIN PAGE -->
 <div id="loginPage" class="page">
   <div class="content-section">
     <div class="auth-container">
@@ -182,7 +182,6 @@
   </div>
 </div>
 
-<!-- MENU PAGE -->
 <div id="menuPage" class="page">
   <div class="content-section">
     <div class="container">
@@ -197,14 +196,36 @@
   </div>
 </div>
 
-<!-- ORDER PAGE -->
 <div id="orderPage" class="page">
   <div class="content-section">
     <div class="container">
-      <h1 class="text-center mb-5">📋 Đặt Bàn & Gọi Món</h1>
+      <h1 class="text-center mb-5">📋 Đặt Hàng</h1>
+      
+      <div class="card mb-4">
+        <div class="card-body">
+          <h4 class="mb-3">Chọn loại đơn hàng</h4>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <div class="order-type-card" onclick="selectOrderType('dine-in')">
+                <div class="order-type-icon">🍽️</div>
+                <h5>Ăn Tại Chỗ</h5>
+                <p class="text-muted mb-0">Chọn bàn và đặt món, thanh toán sau khi ăn xong</p>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <div class="order-type-card" onclick="selectOrderType('takeaway')">
+                <div class="order-type-icon">🥡</div>
+                <h5>Mang Về</h5>
+                <p class="text-muted mb-0">Đặt món và thanh toán ngay</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <div class="row">
         <div class="col-md-8">
-          <div class="card mb-4">
+          <div class="card mb-4" id="tableInfoCard" style="display: none;">
             <div class="card-body">
               <h4>Thông tin đặt bàn</h4>
               <div class="row">
@@ -215,6 +236,22 @@
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Số lượng khách</label>
                   <input type="number" class="form-control" id="guestCount" min="1" value="2">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4" id="customerInfoCard" style="display: none;">
+            <div class="card-body">
+              <h4>Thông tin khách hàng</h4>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Họ tên</label>
+                  <input type="text" class="form-control" id="customerName" placeholder="Nguyễn Văn A">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Số điện thoại</label>
+                  <input type="tel" class="form-control" id="customerPhone" placeholder="0123456789">
                 </div>
               </div>
             </div>
@@ -255,7 +292,9 @@
               <strong class="fs-5">Tổng cộng:</strong>
               <strong id="totalAmount" class="text-primary fs-5">0 VND</strong>
             </div>
-            <button class="btn btn-primary w-100" onclick="reviewOrder()">Xem Lại Đơn Hàng →</button>
+            <button class="btn btn-primary w-100" onclick="reviewOrder()">
+              <span id="orderButtonText">Chọn loại đơn hàng</span> →
+            </button>
           </div>
         </div>
       </div>
@@ -263,7 +302,6 @@
   </div>
 </div>
 
-<!-- REVIEW ORDER PAGE -->
 <div id="reviewPage" class="page">
   <div class="content-section">
     <div class="container">
@@ -272,7 +310,7 @@
         <div class="col-md-8">
           <div class="card mb-4">
             <div class="card-body">
-              <h4>Thông tin đặt bàn</h4>
+              <h4>Thông tin đơn hàng</h4>
               <div id="reviewTableInfo"></div>
             </div>
           </div>
@@ -299,7 +337,9 @@
 
           <div class="d-flex gap-3">
             <button class="btn btn-outline-secondary flex-fill" onclick="showPage('order')">← Quay lại</button>
-            <button class="btn btn-success flex-fill" onclick="proceedToPayment()">Xác nhận & Thanh toán →</button>
+            <button class="btn btn-success flex-fill" onclick="proceedToPayment()">
+              <span id="reviewButtonText">Xác nhận</span> →
+            </button>
           </div>
         </div>
       </div>
@@ -307,7 +347,21 @@
   </div>
 </div>
 
-<!-- PAYMENT PAGE -->
+<div id="pendingPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">🕐 Đơn Hàng Chờ Thanh Toán</h1>
+      <div class="row justify-content-center">
+        <div class="col-md-10">
+          <div id="pendingList">
+            <p class="text-center text-muted">Chưa có đơn hàng chờ thanh toán</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="paymentPage" class="page">
   <div class="content-section">
     <div class="container">
@@ -407,7 +461,6 @@
   </div>
 </div>
 
-<!-- HISTORY PAGE -->
 <div id="historyPage" class="page">
   <div class="content-section">
     <div class="container">
@@ -423,7 +476,6 @@
   </div>
 </div>
 
-<!-- FOOTER -->
 <footer class="footer mt-5">
   <div class="container py-5">
     <div class="row">
@@ -436,7 +488,7 @@
         <p class="text-muted mb-2">📍 123 Phố Huế, Hai Bà Trưng, Hà Nội</p>
         <p class="text-muted mb-2">📞 0123 456 789</p>
         <p class="text-muted mb-2">✉️ contact@nhahangviet.vn</p>
-        <p class="text-muted">🕐 8:00 - 22:00 (Mở cửa cả tuần)</p>
+        <p class="text-muted">🕗 8:00 - 22:00 (Mở cửa cả tuần)</p>
       </div>
       <div class="col-md-4 mb-4">
         <h6 class="mb-3">API Status</h6>
@@ -674,6 +726,71 @@ body {
   transform: translateY(-5px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.15);
 }
+
+.order-type-card {
+  border: 3px solid #e0e0e0;
+  border-radius: 15px;
+  padding: 30px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+  height: 100%;
+}
+
+.order-type-card:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+  transform: translateY(-5px);
+}
+
+.order-type-card.selected {
+  border-color: #667eea;
+  background: #f0f3ff;
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.order-type-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+}
+
+.pending-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  cursor: pointer;
+  border-left: 5px solid #ffc107;
+}
+
+.pending-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.discount-badge {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  display: inline-block;
+  margin-left: 10px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
 </style>
 
 <script>
@@ -686,8 +803,30 @@ let selectedPaymentMethod = null;
 let discountApplied = 0;
 let discountCode = '';
 let orderHistory = [];
+let pendingOrders = [];
 let menuData = [];
 let createdOrderId = null;
+let orderType = null;
+let occupiedTables = new Set(); // Lưu danh sách bàn đang được sử dụng
+
+// Get current day discount
+function getDayDiscount() {
+  const now = new Date();
+  const day = now.getDay();
+  
+  if (day === 1) {
+    return {
+      active: true,
+      percent: 5,
+      message: '🎉 Ưu đãi thứ 2: Giảm 5% tất cả món ăn!'
+    };
+  }
+  return {
+    active: false,
+    percent: 0,
+    message: ''
+  };
+}
 
 // Check API connection on load
 async function checkAPIConnection() {
@@ -741,20 +880,39 @@ function displayMenu() {
   const menuContainer = document.getElementById('menuContainer');
   const orderMenuItems = document.getElementById('orderMenuItems');
   
+  const dayDiscount = getDayDiscount();
+  
   let menuHTML = '';
   let orderHTML = '';
   
+  if (dayDiscount.active) {
+    menuHTML += `
+      <div class="col-12 mb-4">
+        <div class="alert alert-info text-center">
+          <h5 class="mb-0">${dayDiscount.message}</h5>
+        </div>
+      </div>
+    `;
+  }
+  
   menuData.forEach(item => {
     const imageUrl = `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1585032226651-759b368d7246' : '1582878826629-29b7ad1cdc43'}?w=400`;
+    
+    const originalPrice = item.price;
+    const discountedPrice = dayDiscount.active ? Math.floor(originalPrice * (1 - dayDiscount.percent / 100)) : originalPrice;
+    const hasDayDiscount = dayDiscount.active && discountedPrice < originalPrice;
     
     menuHTML += `
       <div class="col-md-6 col-lg-4 mb-4">
         <div class="menu-item">
           <img src="${imageUrl}" alt="${item.name}" class="food-image">
-          <h3>${item.name}</h3>
+          <h3>${item.name}${hasDayDiscount ? '<span class="discount-badge">-' + dayDiscount.percent + '%</span>' : ''}</h3>
           <p class="text-muted">${item.description}</p>
           <div class="d-flex justify-content-between align-items-center">
-            <h4 class="text-primary mb-0">${item.price.toLocaleString()} VND</h4>
+            <div>
+              ${hasDayDiscount ? `<h5 class="text-muted mb-0"><del>${originalPrice.toLocaleString()} VND</del></h5>` : ''}
+              <h4 class="text-primary mb-0">${discountedPrice.toLocaleString()} VND</h4>
+            </div>
             <button class="btn btn-primary btn-sm" onclick="showPage('order')">Đặt món</button>
           </div>
         </div>
@@ -765,13 +923,14 @@ function displayMenu() {
       <div class="order-item">
         <img src="${imageUrl}" alt="${item.name}">
         <div class="flex-grow-1">
-          <strong>${item.name}</strong><br>
+          <strong>${item.name}${hasDayDiscount ? '<span class="discount-badge">-' + dayDiscount.percent + '%</span>' : ''}</strong><br>
           <small class="text-muted">${item.description}</small><br>
-          <span class="text-primary">${item.price.toLocaleString()} VND</span>
+          ${hasDayDiscount ? `<span class="text-muted"><del>${originalPrice.toLocaleString()} VND</del></span><br>` : ''}
+          <span class="text-primary">${discountedPrice.toLocaleString()} VND</span>
         </div>
         <div class="d-flex gap-2 align-items-center">
           <input type="number" class="form-control" style="width: 80px" min="0" value="0" 
-                 data-id="${item.foodID}" data-name="${item.name}" data-price="${item.price}">
+                 data-id="${item.foodID}" data-name="${item.name}" data-price="${discountedPrice}">
           <button class="btn btn-primary btn-sm" onclick="addToOrder(this)">Thêm</button>
         </div>
       </div>
@@ -793,12 +952,37 @@ function showPage(pageId) {
     }
   }
   
+  if (pageId === 'pending') {
+    displayPendingOrders();
+  }
+  
   if (pageId === 'history') {
     displayOrderHistory();
   }
 }
 
-// Register function with API
+function selectOrderType(type) {
+  orderType = type;
+  
+  document.querySelectorAll('.order-type-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  
+  event.currentTarget.classList.add('selected');
+  
+  if (type === 'dine-in') {
+    document.getElementById('tableInfoCard').style.display = 'block';
+    document.getElementById('customerInfoCard').style.display = 'none';
+    document.getElementById('orderButtonText').textContent = 'Thêm vào Chờ Thanh Toán';
+    document.getElementById('reviewButtonText').textContent = 'Thêm vào Chờ Thanh Toán';
+  } else {
+    document.getElementById('tableInfoCard').style.display = 'none';
+    document.getElementById('customerInfoCard').style.display = 'block';
+    document.getElementById('orderButtonText').textContent = 'Xem Lại & Thanh Toán';
+    document.getElementById('reviewButtonText').textContent = 'Xác nhận & Thanh Toán';
+  }
+}
+
 async function register(e) {
   e.preventDefault();
   const username = document.getElementById('regUsername').value;
@@ -839,7 +1023,6 @@ async function register(e) {
   }
 }
 
-// Login function with API
 async function login(e) {
   e.preventDefault();
   const username = document.getElementById('loginUsername').value;
@@ -879,6 +1062,12 @@ function logout() {
   document.getElementById('userSection').style.display = 'none';
   currentOrder = [];
   discountApplied = 0;
+  orderType = null;
+  document.querySelectorAll('.order-type-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  document.getElementById('tableInfoCard').style.display = 'none';
+  document.getElementById('customerInfoCard').style.display = 'none';
   showPage('home');
 }
 
@@ -956,7 +1145,6 @@ function applyDiscount() {
     return;
   }
   
-  // Only DISCOUNT10 is supported by backend
   if (code === 'DISCOUNT10') {
     discountApplied = 10;
     discountCode = code;
@@ -969,7 +1157,6 @@ function applyDiscount() {
     message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`;
     message.className = 'text-success';
     updateOrderSummary();
-
   } else {
     message.textContent = '❌ Mã giảm giá không hợp lệ!';
     message.className = 'text-danger';
@@ -985,18 +1172,46 @@ function reviewOrder() {
     return;
   }
 
-  const tableId = document.getElementById('tableId').value;
-  const guestCount = document.getElementById('guestCount').value;
-  
-  if (!tableId || !guestCount) {
-    alert('Vui lòng điền đầy đủ thông tin đặt bàn!');
+  if (!orderType) {
+    alert('Vui lòng chọn loại đơn hàng (Ăn tại chỗ hoặc Mang về)!');
     return;
   }
 
-  document.getElementById('reviewTableInfo').innerHTML = `
-    <p><strong>Bàn số:</strong> ${tableId}</p>
-    <p><strong>Số khách:</strong> ${guestCount} người</p>
-  `;
+  if (orderType === 'dine-in') {
+    const tableId = document.getElementById('tableId').value;
+    const guestCount = document.getElementById('guestCount').value;
+    
+    if (!tableId || !guestCount) {
+      alert('Vui lòng điền đầy đủ thông tin đặt bàn!');
+      return;
+    }
+
+    // Kiểm tra bàn đã có người chưa
+    if (occupiedTables.has(parseInt(tableId))) {
+      alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`);
+      return;
+    }
+
+    document.getElementById('reviewTableInfo').innerHTML = `
+      <p><strong>Loại:</strong> Ăn tại chỗ</p>
+      <p><strong>Bàn số:</strong> ${tableId}</p>
+      <p><strong>Số khách:</strong> ${guestCount} người</p>
+    `;
+  } else {
+    const name = document.getElementById('customerName').value;
+    const phone = document.getElementById('customerPhone').value;
+    
+    if (!name || !phone) {
+      alert('Vui lòng điền đầy đủ thông tin khách hàng!');
+      return;
+    }
+
+    document.getElementById('reviewTableInfo').innerHTML = `
+      <p><strong>Loại:</strong> Mang về</p>
+      <p><strong>Khách hàng:</strong> ${name}</p>
+      <p><strong>SĐT:</strong> ${phone}</p>
+    `;
+  }
 
   let html = '';
   let subtotal = 0;
@@ -1024,31 +1239,78 @@ function reviewOrder() {
   showPage('review');
 }
 
-// Create order via API
 async function proceedToPayment() {
+  if (orderType === 'dine-in') {
+    await addToPendingOrders();
+  } else {
+    await createOrderAndPay();
+  }
+}
+
+async function addToPendingOrders() {
   const tableId = parseInt(document.getElementById('tableId').value);
   const guestCount = parseInt(document.getElementById('guestCount').value);
   
+  // Kiểm tra lại bàn trước khi thêm vào pending
+  if (occupiedTables.has(tableId)) {
+    alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`);
+    return;
+  }
+  
+  const now = new Date();
+  const orderId = Math.floor(Math.random() * 1000000);
+  
+  let subtotal = 0;
+  currentOrder.forEach(order => {
+    subtotal += order.price * order.quantity;
+  });
+  
+  const discount = Math.floor(subtotal * discountApplied / 100);
+  const total = subtotal - discount;
+  
+  const pendingOrder = {
+    orderId: orderId,
+    type: 'dine-in',
+    tableId: tableId,
+    guestCount: guestCount,
+    items: [...currentOrder],
+    subtotal: subtotal,
+    discount: discount,
+    discountPercent: discountApplied,
+    discountCode: discountCode,
+    total: total,
+    date: now.toLocaleDateString('vi-VN'),
+    time: now.toLocaleTimeString('vi-VN'),
+    status: 'Chờ thanh toán'
+  };
+  
+  pendingOrders.push(pendingOrder);
+  
+  // Đánh dấu bàn đã có người
+  occupiedTables.add(tableId);
+  
+  alert(`✅ Đã thêm đơn hàng bàn ${tableId} vào danh sách chờ thanh toán!`);
+  
+  currentOrder = [];
+  discountApplied = 0;
+  discountCode = '';
+  orderType = null;
+  document.getElementById('discountCode').value = '';
+  document.getElementById('discountMessage').textContent = '';
+  document.querySelectorAll('.order-type-card').forEach(card => {
+    card.classList.remove('selected');
+  });
+  document.getElementById('tableInfoCard').style.display = 'none';
+  
+  updateOrderSummary();
+  showPage('pending');
+}
+
+async function createOrderAndPay() {
+  const name = document.getElementById('customerName').value;
+  const phone = document.getElementById('customerPhone').value;
+  
   try {
-    // First, reserve the table
-    const tableResponse = await fetch(`${API_BASE_URL}/tables/reserve`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify([{
-        tableId: tableId,
-        capacity: guestCount
-      }])
-    });
-
-    if (!tableResponse.ok) {
-      const error = await tableResponse.text();
-      alert('❌ ' + error);
-      return;
-    }
-
-    // Create order
     const items = currentOrder.map(item => ({
       foodId: item.foodId,
       quantity: item.quantity
@@ -1075,13 +1337,24 @@ async function proceedToPayment() {
     document.getElementById('paymentTotal').textContent = orderData.total.toLocaleString() + ' VND';
     document.getElementById('displayOrderId').textContent = '#' + orderData.orderId;
     
-    alert(`✅ Đã xác nhận đặt bàn ${tableId} cho ${guestCount} người`);
+    alert(`✅ Đã tạo đơn mang về cho khách hàng ${name}`);
     showPage('payment');
     
   } catch (error) {
     console.error('Order Creation Error:', error);
     alert('❌ Không thể tạo đơn hàng. Vui lòng thử lại.');
   }
+}
+
+function payPendingOrder(orderId) {
+  const order = pendingOrders.find(o => o.orderId === orderId);
+  if (!order) return;
+  
+  createdOrderId = order.orderId;
+  document.getElementById('paymentTotal').textContent = order.total.toLocaleString() + ' VND';
+  document.getElementById('displayOrderId').textContent = '#' + order.orderId;
+  
+  showPage('payment');
 }
 
 function selectPayment(method) {
@@ -1123,7 +1396,6 @@ function showQRCode() {
   });
 }
 
-// Complete payment via API
 async function completePayment() {
   if (!selectedPaymentMethod) {
     alert('Vui lòng chọn phương thức thanh toán!');
@@ -1150,12 +1422,62 @@ async function completePayment() {
   };
 
   try {
-    let subtotal = 0;
-    currentOrder.forEach(order => {
-      subtotal += order.price * order.quantity;
-    });
-    const discount = Math.floor(subtotal * discountApplied / 100);
-    const totalAmount = subtotal - discount;
+    const pendingOrder = pendingOrders.find(o => o.orderId === createdOrderId);
+    
+    let totalAmount;
+    let orderData;
+    
+    if (pendingOrder) {
+      totalAmount = pendingOrder.total;
+      orderData = {
+        orderId: pendingOrder.orderId,
+        type: pendingOrder.type,
+        tableId: pendingOrder.tableId,
+        guestCount: pendingOrder.guestCount,
+        items: pendingOrder.items,
+        subtotal: pendingOrder.subtotal,
+        discount: pendingOrder.discount,
+        discountPercent: pendingOrder.discountPercent,
+        discountCode: pendingOrder.discountCode,
+        total: pendingOrder.total,
+        paymentMethod: methods[selectedPaymentMethod],
+        date: new Date().toLocaleDateString('vi-VN'),
+        time: new Date().toLocaleTimeString('vi-VN'),
+        status: 'Đã thanh toán'
+      };
+      
+      // Giải phóng bàn khi thanh toán xong
+      occupiedTables.delete(pendingOrder.tableId);
+      
+      pendingOrders = pendingOrders.filter(o => o.orderId !== createdOrderId);
+    } else {
+      let subtotal = 0;
+      currentOrder.forEach(order => {
+        subtotal += order.price * order.quantity;
+      });
+      const discount = Math.floor(subtotal * discountApplied / 100);
+      totalAmount = subtotal - discount;
+      
+      const name = document.getElementById('customerName').value;
+      const phone = document.getElementById('customerPhone').value;
+      
+      orderData = {
+        orderId: createdOrderId,
+        type: 'takeaway',
+        customerName: name,
+        customerPhone: phone,
+        items: [...currentOrder],
+        subtotal: subtotal,
+        discount: discount,
+        discountPercent: discountApplied,
+        discountCode: discountCode,
+        total: totalAmount,
+        paymentMethod: methods[selectedPaymentMethod],
+        date: new Date().toLocaleDateString('vi-VN'),
+        time: new Date().toLocaleTimeString('vi-VN'),
+        status: 'Đã thanh toán'
+      };
+    }
 
     const response = await fetch(`${API_BASE_URL}/payment`, {
       method: 'POST',
@@ -1177,36 +1499,27 @@ async function completePayment() {
 
     const message = await response.text();
     
-    // Save to history
-    const now = new Date();
-    const orderData = {
-      orderId: createdOrderId,
-      tableId: document.getElementById('tableId').value,
-      guestCount: document.getElementById('guestCount').value,
-      items: [...currentOrder],
-      subtotal: subtotal,
-      discount: discount,
-      discountPercent: discountApplied,
-      discountCode: discountCode,
-      total: totalAmount,
-      paymentMethod: methods[selectedPaymentMethod],
-      date: now.toLocaleDateString('vi-VN'),
-      time: now.toLocaleTimeString('vi-VN'),
-      status: 'Đã thanh toán'
-    };
-    
     orderHistory.unshift(orderData);
     
-    alert('✅ ' + message);
+    if (orderData.type === 'dine-in') {
+      alert(`✅ ${message}\n🎉 Bàn ${orderData.tableId} đã trống!`);
+    } else {
+      alert('✅ ' + message);
+    }
     
-    // Reset
     currentOrder = [];
     selectedPaymentMethod = null;
     discountApplied = 0;
     discountCode = '';
     createdOrderId = null;
+    orderType = null;
     document.getElementById('discountCode').value = '';
     document.getElementById('discountMessage').textContent = '';
+    document.querySelectorAll('.order-type-card').forEach(card => {
+      card.classList.remove('selected');
+    });
+    document.getElementById('tableInfoCard').style.display = 'none';
+    document.getElementById('customerInfoCard').style.display = 'none';
     
     updateOrderSummary();
     showPage('home');
@@ -1215,6 +1528,69 @@ async function completePayment() {
     console.error('Payment Error:', error);
     alert('❌ Không thể xử lý thanh toán. Vui lòng thử lại.');
   }
+}
+
+function displayPendingOrders() {
+  const pendingList = document.getElementById('pendingList');
+  
+  if (!pendingOrders || pendingOrders.length === 0) {
+    pendingList.innerHTML = `
+      <div class="text-center p-5">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🕐</div>
+        <h4>Chưa có đơn hàng chờ thanh toán</h4>
+        <p class="text-muted">Các đơn ăn tại chỗ sẽ được lưu ở đây cho đến khi thanh toán</p>
+        <button class="btn btn-primary mt-3" onclick="showPage('order')">Tạo đơn hàng mới</button>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  pendingOrders.forEach(order => {
+    html += `
+      <div class="pending-card" onclick="payPendingOrder(${order.orderId})">
+        <div class="d-flex justify-content-between mb-3">
+          <div>
+            <h5 class="text-primary">Bàn ${order.tableId}</h5>
+            <small class="text-muted">${order.date} ${order.time}</small>
+          </div>
+          <span class="badge bg-warning text-dark">${order.status}</span>
+        </div>
+        
+        <div class="mb-3">
+          <span class="badge bg-secondary">${order.guestCount} khách</span>
+        </div>
+        
+        <div class="mb-3">
+          ${order.items.map(item => `
+            <div class="d-flex justify-content-between">
+              <span>${item.quantity} x ${item.name}</span>
+              <span>${(item.price * item.quantity).toLocaleString()} VND</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        ${order.discount > 0 ? `
+          <div class="d-flex justify-content-between text-success mb-2">
+            <span>Giảm giá (${order.discountPercent}%)</span>
+            <span>-${order.discount.toLocaleString()} VND</span>
+          </div>
+        ` : ''}
+        
+        <hr>
+        <div class="d-flex justify-content-between">
+          <strong>Tổng thanh toán</strong>
+          <strong class="text-primary fs-5">${order.total.toLocaleString()} VND</strong>
+        </div>
+        
+        <button class="btn btn-success w-100 mt-3" onclick="event.stopPropagation(); payPendingOrder(${order.orderId})">
+          Thanh toán ngay →
+        </button>
+      </div>
+    `;
+  });
+  
+  pendingList.innerHTML = html;
 }
 
 function displayOrderHistory() {
@@ -1234,6 +1610,7 @@ function displayOrderHistory() {
   
   let html = '';
   orderHistory.forEach(order => {
+    const isTableOrder = order.type === 'dine-in';
     html += `
       <div class="history-card">
         <div class="d-flex justify-content-between mb-3">
@@ -1245,8 +1622,15 @@ function displayOrderHistory() {
         </div>
         
         <div class="mb-3">
-          <span class="badge bg-secondary">Bàn ${order.tableId}</span>
-          <span class="badge bg-secondary ms-2">${order.guestCount} khách</span>
+          ${isTableOrder ? `
+            <span class="badge bg-secondary">🍽️ Ăn tại chỗ</span>
+            <span class="badge bg-secondary ms-2">Bàn ${order.tableId}</span>
+            <span class="badge bg-secondary ms-2">${order.guestCount} khách</span>
+          ` : `
+            <span class="badge bg-secondary">🥡 Mang về</span>
+            <span class="badge bg-secondary ms-2">${order.customerName}</span>
+            <span class="badge bg-secondary ms-2">${order.customerPhone}</span>
+          `}
           <span class="badge bg-info ms-2">${order.paymentMethod}</span>
         </div>
         
@@ -1277,7 +1661,6 @@ function displayOrderHistory() {
   historyList.innerHTML = html;
 }
 
-// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
   checkAPIConnection();
   loadMenuFromAPI();
