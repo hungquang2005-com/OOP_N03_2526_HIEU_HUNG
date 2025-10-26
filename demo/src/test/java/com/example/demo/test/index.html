@@ -1,0 +1,1308 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hệ Thống Quản Lý Nhà Hàng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Navigation -->
+<header data-bs-theme="dark">
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#" onclick="showPage('home')">🍜 Nhà Hàng Việt</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarCollapse">
+        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('home')">Trang Chủ</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('menu')">Thực Đơn</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('order')">Đặt Hàng</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="showPage('history')">Lịch Sử</a>
+          </li>
+        </ul>
+        <div id="authSection" class="auth-buttons">
+          <button class="btn btn-outline-light" onclick="showPage('login')">Đăng Nhập</button>
+          <button class="btn btn-light" onclick="showPage('register')">Đăng Ký</button>
+        </div>
+        <div id="userSection" class="user-info" style="display: none;">
+          <span>👤 <span id="username"></span></span>
+          <button class="btn btn-outline-light btn-sm" onclick="logout()">Đăng Xuất</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page active">
+  <div id="myCarousel" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+      <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="0" class="active"></button>
+      <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="1"></button>
+      <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="2"></button>
+    </div>
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#777"></rect>
+        </svg>
+        <div class="container">
+          <div class="carousel-caption text-start">
+            <h1>Chào Mừng Đến Nhà Hàng</h1>
+            <p class="opacity-75">Trải nghiệm ẩm thực Việt Nam đích thực với hương vị truyền thống</p>
+            <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#666"></rect>
+        </svg>
+        <div class="container">
+          <div class="carousel-caption">
+            <h1>Thực Đơn Phong Phú</h1>
+            <p>Từ Phở Bò, Bún Chả đến các món ăn đặc sản khác</p>
+            <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
+          </div>
+        </div>
+      </div>
+      <div class="carousel-item">
+        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#555"></rect>
+        </svg>
+        <div class="container">
+          <div class="carousel-caption text-end">
+            <h1>Đặt Bàn Dễ Dàng</h1>
+            <p>Hệ thống đặt bàn và gọi món trực tuyến tiện lợi</p>
+            <p><button class="btn btn-lg btn-primary" onclick="showPage('order')">Đặt Bàn Ngay</button></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </button>
+  </div>
+
+  <div class="container marketing my-5">
+    <div class="row g-4">
+      <div class="col-lg-4">
+        <div class="feature-card p-4 text-center" onclick="showPage('menu')">
+          <div class="feature-icon mb-3">🍜</div>
+          <h2 class="fw-normal">Thực Đơn Phong Phú</h2>
+          <p>MenuController quản lý và hiển thị một danh sách các món ăn đa dạng, từ Phở Bò, Bún Chả cho đến Hủ Tiếu.</p>
+          <button class="btn btn-secondary">Xem Chi Tiết »</button>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="feature-card p-4 text-center" onclick="showPage('order')">
+          <div class="feature-icon mb-3">📋</div>
+          <h2 class="fw-normal">Đặt Hàng & Giảm Giá</h2>
+          <p>OrderController cho phép tạo đơn hàng, thêm món, tính tổng tiền và áp dụng mã giảm giá.</p>
+          <button class="btn btn-secondary">Xem Chi Tiết »</button>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="feature-card p-4 text-center" onclick="showPage('order')">
+          <div class="feature-icon mb-3">💳</div>
+          <h2 class="fw-normal">Thanh Toán Linh Hoạt</h2>
+          <p>PaymentController xử lý thanh toán tiện lợi với tiền mặt, QR code hoặc thẻ tín dụng.</p>
+          <button class="btn btn-secondary">Xem Chi Tiết »</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTER PAGE -->
+<div id="registerPage" class="page">
+  <div class="content-section">
+    <div class="auth-container">
+      <h2 class="text-center mb-4">Đăng Ký Tài Khoản</h2>
+      <form onsubmit="register(event)">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="regUsername" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" id="regPassword" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Nhập lại Password</label>
+          <input type="password" class="form-control" id="regPasswordConfirm" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Vai trò</label>
+          <select class="form-control" id="regRole">
+            <option value="Khách">Khách</option>
+            <option value="Quản lý">Quản lý</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Đăng Ký</button>
+        <p class="text-center mt-3">Đã có tài khoản? <a href="#" onclick="showPage('login')">Đăng nhập</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="page">
+  <div class="content-section">
+    <div class="auth-container">
+      <h2 class="text-center mb-4">Đăng Nhập</h2>
+      <form onsubmit="login(event)">
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input type="text" class="form-control" id="loginUsername" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" id="loginPassword" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
+        <p class="text-center mt-3">Chưa có tài khoản? <a href="#" onclick="showPage('register')">Đăng ký ngay</a></p>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- MENU PAGE -->
+<div id="menuPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">🍜 Thực Đơn Nhà Hàng</h1>
+      <div id="loadingMenu" class="text-center">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Đang tải...</span>
+        </div>
+      </div>
+      <div class="row" id="menuContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ORDER PAGE -->
+<div id="orderPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">📋 Đặt Bàn & Gọi Món</h1>
+      <div class="row">
+        <div class="col-md-8">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h4>Thông tin đặt bàn</h4>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">ID Bàn</label>
+                  <input type="number" class="form-control" id="tableId" min="1" value="1">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Số lượng khách</label>
+                  <input type="number" class="form-control" id="guestCount" min="1" value="2">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-body">
+              <h4>Chọn món</h4>
+              <div id="orderMenuItems"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="order-summary">
+            <h4 class="mb-4">Giỏ Hàng</h4>
+            <div id="orderList" class="mb-3">
+              <p class="text-muted text-center">Chưa có món nào</p>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-2">
+              <strong>Tạm tính:</strong>
+              <strong id="subtotalAmount">0 VND</strong>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Mã giảm giá</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="discountCode" placeholder="Nhập mã (DISCOUNT10)">
+                <button class="btn btn-outline-secondary" onclick="applyDiscount()">Áp dụng</button>
+              </div>
+              <small id="discountMessage" class="text-success"></small>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Giảm giá:</strong>
+              <strong id="discountAmount" class="text-danger">0 VND</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-3">
+              <strong class="fs-5">Tổng cộng:</strong>
+              <strong id="totalAmount" class="text-primary fs-5">0 VND</strong>
+            </div>
+            <button class="btn btn-primary w-100" onclick="reviewOrder()">Xem Lại Đơn Hàng →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REVIEW ORDER PAGE -->
+<div id="reviewPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">🔍 Xác Nhận Đơn Hàng</h1>
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h4>Thông tin đặt bàn</h4>
+              <div id="reviewTableInfo"></div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <h4>Chi tiết đơn hàng</h4>
+              <div id="reviewOrderList"></div>
+              <hr>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Tạm tính:</span>
+                <span id="reviewSubtotal">0 VND</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span>Giảm giá:</span>
+                <span id="reviewDiscount" class="text-danger">0 VND</span>
+              </div>
+              <div class="d-flex justify-content-between">
+                <strong class="fs-5">Tổng thanh toán:</strong>
+                <strong id="reviewTotal" class="text-primary fs-5">0 VND</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3">
+            <button class="btn btn-outline-secondary flex-fill" onclick="showPage('order')">← Quay lại</button>
+            <button class="btn btn-success flex-fill" onclick="proceedToPayment()">Xác nhận & Thanh toán →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAYMENT PAGE -->
+<div id="paymentPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">💳 Thanh Toán</h1>
+      <div class="row justify-content-center">
+        <div class="col-md-8">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h4>Tổng thanh toán</h4>
+              <div class="text-center py-3">
+                <h2 id="paymentTotal" class="text-primary">0 VND</h2>
+                <p class="text-muted">Mã đơn hàng: <strong id="displayOrderId"></strong></p>
+              </div>
+            </div>
+          </div>
+
+          <h4 class="mb-3">Chọn phương thức thanh toán</h4>
+          
+          <div class="payment-method" data-method="cash" onclick="selectPayment('cash')">
+            <div class="d-flex align-items-center">
+              <div class="payment-icon">💵</div>
+              <div>
+                <h5>Tiền Mặt</h5>
+                <p class="text-muted mb-0">Thanh toán trực tiếp tại quầy</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="payment-method" data-method="qr" onclick="selectPayment('qr')">
+            <div class="d-flex align-items-center">
+              <div class="payment-icon">📱</div>
+              <div>
+                <h5>Quét mã QR</h5>
+                <p class="text-muted mb-0">Thanh toán qua ví điện tử</p>
+              </div>
+            </div>
+          </div>
+          <div id="qrCodeSection" class="payment-details" style="display: none;">
+            <div class="text-center p-4 bg-light rounded">
+              <h5 class="mb-3">Quét mã QR để thanh toán</h5>
+              <div id="qrcode" class="d-flex justify-content-center mb-3"></div>
+              <p class="text-muted mb-2">Ngân hàng: <strong>Vietcombank</strong></p>
+              <p class="text-muted mb-2">Số TK: <strong>1234567890</strong></p>
+              <p class="text-muted">Nội dung: <strong id="qrContent"></strong></p>
+            </div>
+          </div>
+
+          <div class="payment-method" data-method="card" onclick="selectPayment('card')">
+            <div class="d-flex align-items-center">
+              <div class="payment-icon">💳</div>
+              <div>
+                <h5>Thẻ Tín Dụng/Ghi Nợ</h5>
+                <p class="text-muted mb-0">Thanh toán qua thẻ ngân hàng</p>
+              </div>
+            </div>
+          </div>
+          <div id="cardPaymentSection" class="payment-details" style="display: none;">
+            <div class="p-4 bg-light rounded">
+              <h5 class="mb-3">Thông tin thẻ</h5>
+              <div class="mb-3">
+                <label class="form-label">Ngân hàng</label>
+                <select class="form-control" id="bankSelect">
+                  <option value="">Chọn ngân hàng</option>
+                  <option value="Vietcombank">Vietcombank</option>
+                  <option value="Techcombank">Techcombank</option>
+                  <option value="BIDV">BIDV</option>
+                  <option value="VietinBank">VietinBank</option>
+                  <option value="ACB">ACB</option>
+                  <option value="MB Bank">MB Bank</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Số thẻ</label>
+                <input type="text" class="form-control" id="cardNumber" placeholder="1234 5678 9012 3456" maxlength="19">
+              </div>
+              <div class="row">
+                <div class="col-6 mb-3">
+                  <label class="form-label">Ngày hết hạn</label>
+                  <input type="text" class="form-control" id="cardExpiry" placeholder="MM/YY" maxlength="5">
+                </div>
+                <div class="col-6 mb-3">
+                  <label class="form-label">CVV</label>
+                  <input type="text" class="form-control" id="cardCVV" placeholder="123" maxlength="3">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Tên chủ thẻ</label>
+                <input type="text" class="form-control" id="cardName" placeholder="NGUYEN VAN A">
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-success btn-lg w-100 mt-4" onclick="completePayment()">Xác Nhận Thanh Toán</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="historyPage" class="page">
+  <div class="content-section">
+    <div class="container">
+      <h1 class="text-center mb-5">📜 Lịch Sử Đơn Hàng</h1>
+      <div class="row justify-content-center">
+        <div class="col-md-10">
+          <div id="historyList">
+            <p class="text-center text-muted">Chưa có đơn hàng nào</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer mt-5">
+  <div class="container py-5">
+    <div class="row">
+      <div class="col-md-4 mb-4">
+        <h5 class="text-primary mb-3">🍜 Nhà Hàng Việt</h5>
+        <p class="text-muted">Mang đến hương vị ẩm thực Việt Nam truyền thống, phục vụ với tâm huyết và đam mê.</p>
+      </div>
+      <div class="col-md-4 mb-4">
+        <h6 class="mb-3">Liên Hệ</h6>
+        <p class="text-muted mb-2">📍 123 Phố Huế, Hai Bà Trưng, Hà Nội</p>
+        <p class="text-muted mb-2">📞 0123 456 789</p>
+        <p class="text-muted mb-2">✉️ contact@nhahangviet.vn</p>
+        <p class="text-muted">🕐 8:00 - 22:00 (Mở cửa cả tuần)</p>
+      </div>
+      <div class="col-md-4 mb-4">
+        <h6 class="mb-3">API Status</h6>
+        <p id="apiStatus" class="text-warning">⚠️ Chưa kết nối</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff !important;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.user-info {
+  color: #fff;
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.carousel {
+  margin-top: 56px;
+}
+
+.carousel-item {
+  height: 500px;
+}
+
+.bd-placeholder-img {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.feature-card {
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  border-radius: 15px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  height: 100%;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.feature-icon {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: white;
+}
+
+.auth-container {
+  max-width: 400px;
+  margin: 100px auto;
+  padding: 40px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+.menu-item {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  height: 100%;
+}
+
+.menu-item:hover {
+  transform: scale(1.02);
+}
+
+.food-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.order-summary {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  position: sticky;
+  top: 80px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.payment-method {
+  border: 2px solid #e0e0e0;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 15px;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: white;
+}
+
+.payment-method:hover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.payment-method.selected {
+  border-color: #667eea;
+  background: #f0f3ff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.payment-icon {
+  font-size: 2rem;
+  margin-right: 20px;
+}
+
+.payment-details {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-section {
+  margin-top: 80px;
+  min-height: 600px;
+  margin-bottom: 50px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.footer {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: white;
+  margin-top: auto;
+}
+
+.footer h5, .footer h6 {
+  color: white;
+}
+
+.card {
+  border: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-radius: 15px;
+}
+
+#qrcode {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  background: white;
+}
+
+.order-item img {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.history-card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.history-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+</style>
+
+<script>
+// API Configuration
+const API_BASE_URL = 'http://localhost:8082/api';
+
+let currentUser = null;
+let currentOrder = [];
+let selectedPaymentMethod = null;
+let discountApplied = 0;
+let discountCode = '';
+let orderHistory = [];
+let menuData = [];
+let createdOrderId = null;
+
+// Check API connection on load
+async function checkAPIConnection() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/menu`);
+    if (response.ok) {
+      document.getElementById('apiStatus').innerHTML = '✅ Đã kết nối Backend';
+      document.getElementById('apiStatus').className = 'text-success';
+      return true;
+    }
+  } catch (error) {
+    document.getElementById('apiStatus').innerHTML = '❌ Không kết nối được Backend';
+    document.getElementById('apiStatus').className = 'text-danger';
+    console.error('API Connection Error:', error);
+  }
+  return false;
+}
+
+// Load menu from API
+async function loadMenuFromAPI() {
+  const loadingEl = document.getElementById('loadingMenu');
+  const menuContainer = document.getElementById('menuContainer');
+  
+  try {
+    loadingEl.style.display = 'block';
+    const response = await fetch(`${API_BASE_URL}/menu`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to load menu');
+    }
+    
+    menuData = await response.json();
+    loadingEl.style.display = 'none';
+    
+    displayMenu();
+  } catch (error) {
+    loadingEl.style.display = 'none';
+    menuContainer.innerHTML = `
+      <div class="col-12 text-center">
+        <div class="alert alert-warning">
+          <h5>⚠️ Không thể tải thực đơn từ server</h5>
+          <p>Vui lòng kiểm tra kết nối Backend hoặc thử lại sau.</p>
+        </div>
+      </div>
+    `;
+    console.error('Menu Loading Error:', error);
+  }
+}
+
+function displayMenu() {
+  const menuContainer = document.getElementById('menuContainer');
+  const orderMenuItems = document.getElementById('orderMenuItems');
+  
+  let menuHTML = '';
+  let orderHTML = '';
+  
+  menuData.forEach(item => {
+    const imageUrl = `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1585032226651-759b368d7246' : '1582878826629-29b7ad1cdc43'}?w=400`;
+    
+    menuHTML += `
+      <div class="col-md-6 col-lg-4 mb-4">
+        <div class="menu-item">
+          <img src="${imageUrl}" alt="${item.name}" class="food-image">
+          <h3>${item.name}</h3>
+          <p class="text-muted">${item.description}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <h4 class="text-primary mb-0">${item.price.toLocaleString()} VND</h4>
+            <button class="btn btn-primary btn-sm" onclick="showPage('order')">Đặt món</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    orderHTML += `
+      <div class="order-item">
+        <img src="${imageUrl}" alt="${item.name}">
+        <div class="flex-grow-1">
+          <strong>${item.name}</strong><br>
+          <small class="text-muted">${item.description}</small><br>
+          <span class="text-primary">${item.price.toLocaleString()} VND</span>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <input type="number" class="form-control" style="width: 80px" min="0" value="0" 
+                 data-id="${item.foodID}" data-name="${item.name}" data-price="${item.price}">
+          <button class="btn btn-primary btn-sm" onclick="addToOrder(this)">Thêm</button>
+        </div>
+      </div>
+    `;
+  });
+  
+  menuContainer.innerHTML = menuHTML;
+  orderMenuItems.innerHTML = orderHTML;
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId + 'Page').classList.add('active');
+  window.scrollTo(0, 0);
+  
+  if (pageId === 'menu') {
+    if (menuData.length === 0) {
+      loadMenuFromAPI();
+    }
+  }
+  
+  if (pageId === 'history') {
+    displayOrderHistory();
+  }
+}
+
+// Register function with API
+async function register(e) {
+  e.preventDefault();
+  const username = document.getElementById('regUsername').value;
+  const password = document.getElementById('regPassword').value;
+  const confirmPassword = document.getElementById('regPasswordConfirm').value;
+  const role = document.getElementById('regRole').value;
+
+  if (password !== confirmPassword) {
+    alert('Mật khẩu không khớp!');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password,
+        confirmPassword: confirmPassword,
+        role: role
+      })
+    });
+
+    if (response.ok) {
+      const message = await response.text();
+      alert('✅ ' + message);
+      showPage('login');
+    } else {
+      const error = await response.text();
+      alert('❌ ' + error);
+    }
+  } catch (error) {
+    console.error('Register Error:', error);
+    alert('❌ Không thể kết nối đến server. Vui lòng kiểm tra Backend.');
+  }
+}
+
+// Login function with API
+async function login(e) {
+  e.preventDefault();
+  const username = document.getElementById('loginUsername').value;
+  const password = document.getElementById('loginPassword').value;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: username,
+        password: password
+      })
+    });
+
+    if (response.ok) {
+      currentUser = await response.json();
+      document.getElementById('authSection').style.display = 'none';
+      document.getElementById('userSection').style.display = 'flex';
+      document.getElementById('username').textContent = currentUser.username;
+      alert('✅ Đăng nhập thành công! Chào ' + currentUser.username);
+      showPage('home');
+    } else {
+      alert('❌ Sai username hoặc password!');
+    }
+  } catch (error) {
+    console.error('Login Error:', error);
+    alert('❌ Không thể kết nối đến server. Vui lòng kiểm tra Backend.');
+  }
+}
+
+function logout() {
+  currentUser = null;
+  document.getElementById('authSection').style.display = 'flex';
+  document.getElementById('userSection').style.display = 'none';
+  currentOrder = [];
+  discountApplied = 0;
+  showPage('home');
+}
+
+function addToOrder(btn) {
+  const input = btn.previousElementSibling;
+  const quantity = parseInt(input.value);
+  if (quantity <= 0) {
+    alert('Vui lòng nhập số lượng!');
+    return;
+  }
+
+  const id = parseInt(input.dataset.id);
+  const name = input.dataset.name;
+  const price = parseInt(input.dataset.price);
+  
+  const existingItem = currentOrder.find(o => o.foodId === id);
+  if (existingItem) {
+    existingItem.quantity += quantity;
+  } else {
+    currentOrder.push({ foodId: id, name, price, quantity });
+  }
+
+  updateOrderSummary();
+  alert(`✅ Đã thêm ${quantity} x ${name}`);
+  input.value = 0;
+}
+
+function updateOrderSummary() {
+  const orderList = document.getElementById('orderList');
+  let html = '';
+  let subtotal = 0;
+
+  if (currentOrder.length === 0) {
+    html = '<p class="text-muted text-center">Chưa có món nào</p>';
+  } else {
+    currentOrder.forEach(order => {
+      const itemTotal = order.price * order.quantity;
+      subtotal += itemTotal;
+      html += `
+        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+          <div>
+            <div><strong>${order.name}</strong></div>
+            <small class="text-muted">${order.quantity} x ${order.price.toLocaleString()}</small>
+          </div>
+          <div class="text-end">
+            <div>${itemTotal.toLocaleString()} VND</div>
+            <button class="btn btn-sm btn-link text-danger p-0" onclick="removeFromOrder(${order.foodId})">Xóa</button>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  orderList.innerHTML = html;
+  document.getElementById('subtotalAmount').textContent = subtotal.toLocaleString() + ' VND';
+  
+  const discount = Math.floor(subtotal * discountApplied / 100);
+  const total = subtotal - discount;
+  
+  document.getElementById('discountAmount').textContent = '-' + discount.toLocaleString() + ' VND';
+  document.getElementById('totalAmount').textContent = total.toLocaleString() + ' VND';
+}
+
+function removeFromOrder(id) {
+  currentOrder = currentOrder.filter(o => o.foodId !== id);
+  updateOrderSummary();
+}
+
+function applyDiscount() {
+  const code = document.getElementById('discountCode').value.trim().toUpperCase();
+  const message = document.getElementById('discountMessage');
+  
+  if (!code) {
+    message.textContent = '';
+    return;
+  }
+  
+  // Only DISCOUNT10 is supported by backend
+  if (code === 'DISCOUNT10') {
+    discountApplied = 10;
+    discountCode = code;
+    message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`;
+    message.className = 'text-success';
+    updateOrderSummary();
+  } else if (code === 'DISCOUNT20') {
+    discountApplied = 20;
+    discountCode = code;
+    message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`;
+    message.className = 'text-success';
+    updateOrderSummary();
+
+  } else {
+    message.textContent = '❌ Mã giảm giá không hợp lệ!';
+    message.className = 'text-danger';
+    discountApplied = 0;
+    discountCode = '';
+    updateOrderSummary();
+  }
+}
+
+function reviewOrder() {
+  if (currentOrder.length === 0) {
+    alert('Vui lòng chọn món trước!');
+    return;
+  }
+
+  const tableId = document.getElementById('tableId').value;
+  const guestCount = document.getElementById('guestCount').value;
+  
+  if (!tableId || !guestCount) {
+    alert('Vui lòng điền đầy đủ thông tin đặt bàn!');
+    return;
+  }
+
+  document.getElementById('reviewTableInfo').innerHTML = `
+    <p><strong>Bàn số:</strong> ${tableId}</p>
+    <p><strong>Số khách:</strong> ${guestCount} người</p>
+  `;
+
+  let html = '';
+  let subtotal = 0;
+  
+  currentOrder.forEach(order => {
+    const itemTotal = order.price * order.quantity;
+    subtotal += itemTotal;
+    html += `
+      <div class="d-flex justify-content-between mb-2">
+        <span>${order.quantity} x ${order.name}</span>
+        <span>${itemTotal.toLocaleString()} VND</span>
+      </div>
+    `;
+  });
+
+  document.getElementById('reviewOrderList').innerHTML = html;
+  
+  const discount = Math.floor(subtotal * discountApplied / 100);
+  const total = subtotal - discount;
+  
+  document.getElementById('reviewSubtotal').textContent = subtotal.toLocaleString() + ' VND';
+  document.getElementById('reviewDiscount').textContent = '-' + discount.toLocaleString() + ' VND';
+  document.getElementById('reviewTotal').textContent = total.toLocaleString() + ' VND';
+  
+  showPage('review');
+}
+
+// Create order via API
+async function proceedToPayment() {
+  const tableId = parseInt(document.getElementById('tableId').value);
+  const guestCount = parseInt(document.getElementById('guestCount').value);
+  
+  try {
+    // First, reserve the table
+    const tableResponse = await fetch(`${API_BASE_URL}/tables/reserve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify([{
+        tableId: tableId,
+        capacity: guestCount
+      }])
+    });
+
+    if (!tableResponse.ok) {
+      const error = await tableResponse.text();
+      alert('❌ ' + error);
+      return;
+    }
+
+    // Create order
+    const items = currentOrder.map(item => ({
+      foodId: item.foodId,
+      quantity: item.quantity
+    }));
+
+    const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: items,
+        discountCode: discountCode || null
+      })
+    });
+
+    if (!orderResponse.ok) {
+      throw new Error('Failed to create order');
+    }
+
+    const orderData = await orderResponse.json();
+    createdOrderId = orderData.orderId;
+    
+    document.getElementById('paymentTotal').textContent = orderData.total.toLocaleString() + ' VND';
+    document.getElementById('displayOrderId').textContent = '#' + orderData.orderId;
+    
+    alert(`✅ Đã xác nhận đặt bàn ${tableId} cho ${guestCount} người`);
+    showPage('payment');
+    
+  } catch (error) {
+    console.error('Order Creation Error:', error);
+    alert('❌ Không thể tạo đơn hàng. Vui lòng thử lại.');
+  }
+}
+
+function selectPayment(method) {
+  document.getElementById('qrCodeSection').style.display = 'none';
+  document.getElementById('cardPaymentSection').style.display = 'none';
+  
+  document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
+  
+  document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+  selectedPaymentMethod = method;
+  
+  if (method === 'qr') {
+    showQRCode();
+  } else if (method === 'card') {
+    document.getElementById('cardPaymentSection').style.display = 'block';
+  }
+}
+
+function showQRCode() {
+  const qrSection = document.getElementById('qrCodeSection');
+  qrSection.style.display = 'block';
+  
+  const orderId = createdOrderId || Math.floor(Math.random() * 10000);
+  const total = document.getElementById('paymentTotal').textContent;
+  const content = `NH VIET ${orderId} ${total}`;
+  
+  document.getElementById('qrContent').textContent = content;
+  
+  const qrContainer = document.getElementById('qrcode');
+  qrContainer.innerHTML = '';
+  
+  new QRCode(qrContainer, {
+    text: content,
+    width: 200,
+    height: 200,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+}
+
+// Complete payment via API
+async function completePayment() {
+  if (!selectedPaymentMethod) {
+    alert('Vui lòng chọn phương thức thanh toán!');
+    return;
+  }
+
+  if (selectedPaymentMethod === 'card') {
+    const bank = document.getElementById('bankSelect').value;
+    const cardNumber = document.getElementById('cardNumber').value;
+    const cardExpiry = document.getElementById('cardExpiry').value;
+    const cardCVV = document.getElementById('cardCVV').value;
+    const cardName = document.getElementById('cardName').value;
+    
+    if (!bank || !cardNumber || !cardExpiry || !cardCVV || !cardName) {
+      alert('Vui lòng điền đầy đủ thông tin thẻ!');
+      return;
+    }
+  }
+
+  const methods = {
+    'cash': 'Tiền mặt',
+    'qr': 'QR Code',
+    'card': 'Thẻ tín dụng'
+  };
+
+  try {
+    let subtotal = 0;
+    currentOrder.forEach(order => {
+      subtotal += order.price * order.quantity;
+    });
+    const discount = Math.floor(subtotal * discountApplied / 100);
+    const totalAmount = subtotal - discount;
+
+    const response = await fetch(`${API_BASE_URL}/payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        orderId: createdOrderId,
+        paymentMethod: methods[selectedPaymentMethod],
+        totalAmount: totalAmount
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      alert('❌ ' + error);
+      return;
+    }
+
+    const message = await response.text();
+    
+    // Save to history
+    const now = new Date();
+    const orderData = {
+      orderId: createdOrderId,
+      tableId: document.getElementById('tableId').value,
+      guestCount: document.getElementById('guestCount').value,
+      items: [...currentOrder],
+      subtotal: subtotal,
+      discount: discount,
+      discountPercent: discountApplied,
+      discountCode: discountCode,
+      total: totalAmount,
+      paymentMethod: methods[selectedPaymentMethod],
+      date: now.toLocaleDateString('vi-VN'),
+      time: now.toLocaleTimeString('vi-VN'),
+      status: 'Đã thanh toán'
+    };
+    
+    orderHistory.unshift(orderData);
+    
+    alert('✅ ' + message);
+    
+    // Reset
+    currentOrder = [];
+    selectedPaymentMethod = null;
+    discountApplied = 0;
+    discountCode = '';
+    createdOrderId = null;
+    document.getElementById('discountCode').value = '';
+    document.getElementById('discountMessage').textContent = '';
+    
+    updateOrderSummary();
+    showPage('home');
+    
+  } catch (error) {
+    console.error('Payment Error:', error);
+    alert('❌ Không thể xử lý thanh toán. Vui lòng thử lại.');
+  }
+}
+
+function displayOrderHistory() {
+  const historyList = document.getElementById('historyList');
+  
+  if (!orderHistory || orderHistory.length === 0) {
+    historyList.innerHTML = `
+      <div class="text-center p-5">
+        <div style="font-size: 4rem; margin-bottom: 20px;">📋</div>
+        <h4>Chưa có đơn hàng nào</h4>
+        <p class="text-muted">Hãy đặt món và thanh toán để xem lịch sử đơn hàng</p>
+        <button class="btn btn-primary mt-3" onclick="showPage('order')">Đặt hàng ngay</button>
+      </div>
+    `;
+    return;
+  }
+  
+  let html = '';
+  orderHistory.forEach(order => {
+    html += `
+      <div class="history-card">
+        <div class="d-flex justify-content-between mb-3">
+          <div>
+            <h5 class="text-primary">#${order.orderId}</h5>
+            <small class="text-muted">${order.date} ${order.time}</small>
+          </div>
+          <span class="badge bg-success">${order.status}</span>
+        </div>
+        
+        <div class="mb-3">
+          <span class="badge bg-secondary">Bàn ${order.tableId}</span>
+          <span class="badge bg-secondary ms-2">${order.guestCount} khách</span>
+          <span class="badge bg-info ms-2">${order.paymentMethod}</span>
+        </div>
+        
+        <div class="mb-3">
+          ${order.items.map(item => `
+            <div class="d-flex justify-content-between">
+              <span>${item.quantity} x ${item.name}</span>
+              <span>${(item.price * item.quantity).toLocaleString()} VND</span>
+            </div>
+          `).join('')}
+        </div>
+        
+        ${order.discount > 0 ? `
+          <div class="d-flex justify-content-between text-success mb-2">
+            <span>Giảm giá (${order.discountPercent}%)</span>
+            <span>-${order.discount.toLocaleString()} VND</span>
+          </div>
+        ` : ''}
+        
+        <div class="d-flex justify-content-between">
+          <strong>Tổng thanh toán</strong>
+          <strong class="text-primary">${order.total.toLocaleString()} VND</strong>
+        </div>
+      </div>
+    `;
+  });
+  
+  historyList.innerHTML = html;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  checkAPIConnection();
+  loadMenuFromAPI();
+  
+  const cardNumberInput = document.getElementById('cardNumber');
+  if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\s/g, '');
+      let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+      e.target.value = formattedValue;
+    });
+  }
+  
+  const cardExpiryInput = document.getElementById('cardExpiry');
+  if (cardExpiryInput) {
+    cardExpiryInput.addEventListener('input', function(e) {
+      let value = e.target.value.replace(/\D/g, '');
+      if (value.length >= 2) {
+        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+      }
+      e.target.value = value;
+    });
+  }
+});
+</script>
+
+</body>
+</html>
