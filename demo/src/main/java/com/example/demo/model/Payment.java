@@ -1,13 +1,22 @@
 package com.example.demo.model;
 
+import jakarta.persistence.*; 
 import java.util.Date;
 
+@Entity
+@Table(name = "payments")
 public class Payment {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int paymentId;
+
     private double amount;
     private String method;
-    private String status; 
+    private String status;
     private String paymentDate; 
+
+    @Temporal(TemporalType.TIMESTAMP)
     private Date timestamp;
 
     public Payment() {
@@ -22,7 +31,7 @@ public class Payment {
         this.method = method;
         this.status = "Đang xử lý";
         this.timestamp = new Date();
-        this.paymentDate = Time.layThoiGianHienTai(); 
+        this.paymentDate = Time.layThoiGianHienTai();
     }
 
     public int getPaymentId() { return paymentId; }
@@ -61,7 +70,6 @@ public class Payment {
                 ", amount=" + amount +
                 ", method='" + method + '\'' +
                 ", status='" + status + '\'' +
-                ", paymentDate='" + paymentDate + '\'' +
                 '}';
     }
 }

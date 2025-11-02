@@ -1,13 +1,20 @@
 package com.example.demo.model;
 
-public class Table {
+import jakarta.persistence.*; 
+
+@Entity
+@Table(name = "tables")
+public class DiningTable {
+
+    @Id 
     private int tableId;
+
     private int capacity;
     private boolean reserved;
 
-    public Table() {}
+    public DiningTable() {}
 
-    public Table(int tableId, int capacity) {
+    public DiningTable(int tableId, int capacity) {
         this.tableId = tableId;
         this.capacity = capacity;
         this.reserved = false;

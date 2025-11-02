@@ -1,7 +1,14 @@
 package com.example.demo.model;
 
+import jakarta.persistence.*;
+@Entity                
+@Table(name = "foods") 
 public class Food {
+
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY) 
     private int foodID;
+
     private String name;
     private double price;
     private String description;
@@ -31,7 +38,6 @@ public class Food {
                 "foodID=" + foodID +
                 ", name='" + name + '\'' +
                 ", price=" + price +
-                ", description='" + description + '\'' +
                 '}';
     }
 }

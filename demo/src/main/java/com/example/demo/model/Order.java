@@ -1,16 +1,30 @@
 package com.example.demo.model;
 
-import java.util.*;
+import jakarta.persistence.*; 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
+@Entity
+@Table(name = "orders") 
 public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int orderId;
+
+    @Temporal(TemporalType.TIMESTAMP) 
     private Date orderDate;
+
     private String status;
-    private List<OrderDetail> orderDetails;
     private double total;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private List<OrderDetail> orderDetails;
 
     public Order() {
         this.orderDetails = new ArrayList<>();
+        this.orderDate = new Date(); 
     }
 
     public Order(int orderId, Date orderDate, String status) {
@@ -38,12 +52,15 @@ public class Order {
 
     public void addOrderDetail(OrderDetail detail) {
         orderDetails.add(detail);
+        detail.setOrder(this);
     }
 
     public double calculateTotal() {
         double sum = 0;
-        for (OrderDetail detail : orderDetails) {
-            sum += detail.subTotal();
+        if (orderDetails != null) {
+            for (OrderDetail detail : orderDetails) {
+                sum += detail.subTotal();
+            }
         }
         this.total = sum;
         return sum;
@@ -53,10 +70,8 @@ public class Order {
     public String toString() {
         return "Order{" +
                 "orderId=" + orderId +
-                ", orderDate=" + Time.dinhDang(orderDate) + // ✅ Dùng Time
                 ", status='" + status + '\'' +
                 ", total=" + total +
-                ", itemCount=" + orderDetails.size() +
                 '}';
     }
 }
