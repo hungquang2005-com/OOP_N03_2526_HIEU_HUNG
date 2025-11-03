@@ -25,21 +25,7 @@ Mục tiêu của dự án:
 
 ---
 
-src/
-├── App.java # Điểm bắt đầu chương trình
-├── Category.java # Quản lý danh mục món ăn
-├── Food.java # Món ăn
-├── ListOfUser.java # Quản lý danh sách người dùng
-├── Order.java # Đơn hàng
-├── OrderDetail.java # Chi tiết đơn hàng
-├── Payment.java # Thanh toán
-├── PeopleInterface.java # Interface mô tả hành vi con người
-├── Person.java # Lớp cha cơ bản của User
-├── RestaurantManagement.java# Quản lý món ăn + đơn hàng
-├── Table.java # Bàn ăn
-├── Time.java # Hỗ trợ xử lý thời gian
-├── User.java # Người dùng (extends Person)
-└── Test.java # Thực thi logic chính (menu console)
+
 
 ## 👤 Danh sách 14 đối tượng
 1. **App** – Entry point, chạy chương trình.  
