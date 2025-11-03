@@ -97,3 +97,7 @@ src/
 
 ### User – CRUD
 ![User Activity Diagram](doc/User.png)
+
+hưỡng dẫn chạy:
+cd D:\RestaurantFoodManagement\demo
+mvn spring-boot:run
