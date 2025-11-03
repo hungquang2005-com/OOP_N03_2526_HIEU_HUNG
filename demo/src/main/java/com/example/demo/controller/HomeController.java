@@ -10,4 +10,9 @@ public class HomeController {
     public String home() {
         return "view";
     }
+@GetMapping("/admin")
+    public String adminPage() {
+        return "admin"; // Tên "admin" này phải khớp với tên tệp "admin.html"
+    }
+    // ======================================
 }
