@@ -87,4 +87,7 @@ Mục tiêu của dự án:
 hưỡng dẫn chạy:
 cd D:\RestaurantFoodManagement\demo
 mvn spring-boot:run
+chạy test
+cd demo
+mvn test
 cập nhật tên hung
