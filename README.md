@@ -1,106 +1,89 @@
-# 🍽️ Ứng dụng Đặt bàn & Gọi món Thông minh — Hưng & Hiếu
+## 6. UML / Sequence & Màn hình thao tác
 
-## ✅ 1. Giới thiệu tổng quan
-
-Ứng dụng Đặt bàn và Gọi món Thông minh là hệ thống **RESTful API Backend** hỗ trợ toàn bộ nghiệp vụ của một nhà hàng hiện đại: Từ đăng ký tài khoản, đặt bàn, quản lý món ăn, xử lý đơn hàng đến thanh toán và thống kê doanh thu.
-
-**Mục tiêu của dự án:**
-- Tự động hóa quy trình hoạt động của nhà hàng 📌  
-- Cung cấp API dễ tích hợp cho Web/Mobile Client 📲  
-- Đảm bảo bảo mật, dễ mở rộng và hiệu suất cao ⚙️  
-
-Dự án được xây dựng theo **Spring Boot**, áp dụng kiến trúc **3 tầng (Model – Repository – Controller)** với mô hình dữ liệu tiêu chuẩn doanh nghiệp.
+### 6.1. UML tổng quan hệ thống
+![uml](./img/uml/uml.jpg)
 
 ---
 
-## 👥 2. Thành viên nhóm
+### 6.2. CRUD Món ăn (Food)
 
-| Họ và tên | Mã số sinh viên | Vai trò |
-| :--- | :--- | :--- |
-| **Nguyễn Quang Hưng** | 23010103 | Lập trình, xây dựng và triển khai hệ thống |
-| **Lều Trung Hiếu** | 23010142 | Phân tích nghiệp vụ, thiết kế CSDL, viết readme |
+- **Thêm món ăn**
+  
+  ![themmonan](./img/food/themmonan.jpg)
 
----
+- **Xem thực đơn**
+  
+  ![xemthucdon](./img/food/xemthucdon.jpg)
 
-## 🔗 3. Thông tin liên quan
+- **Cập nhật món ăn**
+  
+  ![capnhapmonan](./img/food/capnhapmonan.jpg)
 
-- **GitHub Repository:** "https://github.com/hungquang2005-com/OOP_N03_2526_HIEU_HUNG"
-
-- **Video Demo:** `[Điền link YouTube nếu có]`
-
-### 3.1. Cách chạy chương trình
-- vào terminal rồi gõ:
-
-cd demo
-mvn spring-boot:run
+- **Xóa món ăn**
+  
+  ![xoamonan](./img/food/xoamonan.jpg)
 
 ---
 
-### 3.2 link vào chương trình
-- Sau khi chạy lệnh trên vscode ta sẽ vào link của người dùng:
-- http://localhost:8082
+### 6.3. CRUD Đơn hàng (Order)
 
-- Tiếp đến là link của admin:
-- http://localhost:8082/admin
+- **Tạo đơn hàng**
+  
+  ![taodonhang](./img/order/taodonhang.jpg)
 
-## 🚀 4. Chức năng chính của hệ thống
+- **Xem lịch sử đơn hàng**
+  
+  ![xemlsdonhang](./img/order/xemlsdonhang.jpg)
 
-### 🔐 4.1. Quản lý Người dùng & Xác thực (AuthController)
-- Đăng ký, đăng nhập, phân quyền người dùng  
-- Lấy thông tin tài khoản & danh sách người dùng  
+- **Cập nhật trạng thái đơn**
+  
+  ![capnhaptrangthaidon](./img/order/capnhaptrangthaidon.jpg)
 
-### 🍜 4.2. Quản lý Thực đơn (MenuController)
-- CRUD món ăn  
-- Lọc & xem chi tiết món  
-
-### 🪑 4.3. Quản lý Bàn ăn (TableController)
-- Đặt bàn / Hủy bàn theo trạng thái  
-- Quản lý danh sách bàn  
-
-### 🧾 4.4. Quản lý Đơn hàng (OrderController)
-- Tạo đơn hàng gồm nhiều món  
-- Cập nhật trạng thái (Đang chế biến / Hoàn thành)  
-- Lọc đơn theo người dùng  
-
-### 💳 4.5. Thanh toán (PaymentController)
-- Ghi nhận giao dịch thanh toán  
-- Lưu lịch sử thanh toán  
-
-### 📈 4.6. Báo cáo & Thống kê (StatisticsController)
-- Doanh thu theo thời gian  
-- Món ăn phổ biến  
+- **Xóa lịch sử đơn hàng**
+  
+  ![xoalsdonhang](./img/order/xoalsdonhang.jpg)
 
 ---
 
-## 🧩 5. Kiến trúc hệ thống
+### 6.4. CRUD Thanh toán (Payment)
 
-| Layer | Nhiệm vụ chính |
-| :--- | :--- |
-| **Controller** | Tiếp nhận request, điều hướng, trả response |
-| **Repository** | ORM thao tác trực tiếp với database |
-| **Model (Entity)** | Cấu trúc dữ liệu ánh xạ bảng trong DB |
+- **Cập nhật thông tin thanh toán**
+  
+  ![cap-nhap-thanh-toan](./img/payment/cap-nhap-thanh-toan.jpg)
 
-➡️ **Ưu điểm:** Dễ bảo trì – Mở rộng – Tách biệt rõ vai trò từng lớp.
+- **Xem lịch sử thanh toán**
+  
+  ![xem-ls-thanh-toán](./img/payment/xem-ls-thanh-toán.jpg)
 
----
+- **Xử lý thanh toán**
+  
+  ![xu-li-thanh-toan](./img/payment/xu-li-thanh-toan.jpg)
 
-## 🖼️ 6. Các sơ đồ thiết kế
-
-### 6.1. Sơ đồ UML (Class Diagram)
-**Link ảnh:** [./img/Class_Diagram_Final.png.jpg](./img/uml.jpg)  
-> Mô tả các lớp chính: `User`, `Food`, `Order`, `OrderDetail`, `Payment` và mối quan hệ giữa chúng.
-
----
-
-### 6.2. Link ảnh 4 CRUD theo module (Food, Order, Payment, User)
-- **Food CRUD:** [./img/Food.png](./img/food1.jpg)  
-- **Order CRUD:** [./img/Order.png](./img/oder1.jpg)  
-- **Payment CRUD:** [./img/payment.jpg](./img/payment1.jpg)  
-- **User CRUD:** [./img/User.png](./img/user1.jpg)
+- **Xóa thanh toán**
+  
+  ![xoa-thanh-toan](./img/payment/xoa-thanh-toan.jpg)
 
 ---
 
-### 6.3. Sơ đồ chức năng tổng thể (Use Case)
-![Sơ đồ chức năng tổng thể](./img/sodochucnangtong.jpg)
+### 6.5. CRUD Người dùng (User)
+
+- **Đăng ký tài khoản**
+  
+  ![dki_taikhoan](./img/user/dki_taikhoan.jpg)
+
+- **Xem danh sách người dùng**
+  
+  ![xem_ds_user](./img/user/xem_ds_user.jpg)
+
+- **Vô hiệu hóa người dùng**
+  
+  ![vohieuhoa-user](./img/user/vohieuhoa-user.jpg)
+
+- **Xóa người dùng**
+  
+  ![xoa-user](./img/user/xoa-user.jpg)
 
 ---
+
+## 7. Quy trình chính / Use Case tổng quan
+![quytrinhchinh](./img/quytrinhchinh/quytrinhchinh.jpg)
