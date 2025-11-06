@@ -159,21 +159,33 @@ public class OrderController {
         }
     }
 
-    @DeleteMapping("/orders/{orderId}")
-    public ResponseEntity<?> deleteOrder(@PathVariable int orderId) {
-        try {
-            if (orderRepository.existsById(orderId)) {
-                orderRepository.deleteById(orderId); 
-                System.out.println("🗑️ Deleted order ID: " + orderId);
-                return ResponseEntity.ok("Đã xóa đơn hàng ID: " + orderId);
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Không tìm thấy đơn hàng với ID: " + orderId);
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Error deleting order: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi xóa đơn hàng: " + e.getMessage());
+    // THÊM VÀO OrderController.java
+@DeleteMapping("/orders/clear/{username}")
+public ResponseEntity<?> clearUserOrderHistory(@PathVariable String username) {
+    try {
+        Optional<User> userOpt = userRepository.findById(username);
+        if (!userOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Không tìm thấy user: " + username);
         }
+        
+        User user = userOpt.get();
+        List<Order> userOrders = orderRepository.findByUser(user);
+        
+        if (userOrders.isEmpty()) {
+            return ResponseEntity.ok("Không có đơn hàng nào để xóa");
+        }
+        
+        // Xóa tất cả đơn hàng của user
+        orderRepository.deleteAll(userOrders);
+        
+        System.out.println("🗑️ Đã xóa " + userOrders.size() + " đơn hàng của user: " + username);
+        return ResponseEntity.ok("Đã xóa " + userOrders.size() + " đơn hàng");
+        
+    } catch (Exception e) {
+        System.err.println("❌ Error clearing order history: " + e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Lỗi khi xóa lịch sử đơn hàng");
     }
+}
 }

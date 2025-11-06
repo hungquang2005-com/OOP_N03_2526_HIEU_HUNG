@@ -55,44 +55,56 @@
       <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="1"></button>
       <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="2"></button>
     </div>
+
     <div class="carousel-inner">
-      <div class="carousel-item active">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#777"></rect>
-        </svg>
-        <div class="container">
-          <div class="carousel-caption text-start">
-            <h1>Chào Mừng Đến Nhà Hàng</h1>
-            <p class="opacity-75">Trải nghiệm ẩm thực Việt Nam đích thực với hương vị truyền thống</p>
-            <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
-          </div>
-        </div>
-      </div>
-      <div class="carousel-item">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#666"></rect>
-        </svg>
-        <div class="container">
-          <div class="carousel-caption">
-            <h1>Thực Đơn Phong Phú</h1>
-            <p>Từ Phở Bò, Bún Chả đến các món ăn đặc sản khác</p>
-            <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
-          </div>
-        </div>
-      </div>
-      <div class="carousel-item">
-        <svg class="bd-placeholder-img" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100%" height="100%" fill="#555"></rect>
-        </svg>
-        <div class="container">
-          <div class="carousel-caption text-end">
-            <h1>Đặt Bàn Dễ Dàng</h1>
-            <p>Hệ thống đặt bàn và gọi món trực tuyến tiện lợi</p>
-            <p><button class="btn btn-lg btn-primary" onclick="showPage('order')">Đặt Bàn Ngay</button></p>
-          </div>
-        </div>
+
+  <div class="carousel-item active">
+    <img src="https://cdn.tcdulichtphcm.vn/upload/3-2022/images/2022-09-01/picture-1-1661992494-765-width1341height894.jpg" 
+         class="d-block w-100" 
+         alt="Chào mừng" 
+         style="object-fit: cover; height: 500px; filter: brightness(0.7);">
+    
+    <div class="container">
+      <div class="carousel-caption text-start">
+        <h1>Chào Mừng Đến Nhà Hàng</h1>
+        <p class="opacity-75">Trải nghiệm ẩm thực Việt Nam đích thực với hương vị truyền thống</p>
+        <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
       </div>
     </div>
+  </div>
+
+  <div class="carousel-item">
+    <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600" 
+         class="d-block w-100" 
+         alt="Thực đơn" 
+         style="object-fit: cover; height: 500px; filter: brightness(0.7);">
+    
+    <div class="container">
+      <div class="carousel-caption">
+        <h1>Thực Đơn Phong Phú</h1>
+        <p>Từ Phở Bò, Bún Chả đến các món ăn đặc sản khác</p>
+        <p><button class="btn btn-lg btn-primary" onclick="showPage('menu')">Xem Thực Đơn</button></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="carousel-item">
+    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600" 
+         class="d-block w-100" 
+         alt="Đặt bàn" 
+         style="object-fit: cover; height: 500px; filter: brightness(0.7);">
+    
+    <div class="container">
+      <div class="carousel-caption text-end">
+        <h1>Đặt Bàn Dễ Dàng</h1>
+        <p>Hệ thống đặt bàn và gọi món trực tuyến tiện lợi</p>
+        <p><button class="btn btn-lg btn-primary" onclick="showPage('order')">Đặt Bàn Ngay</button></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
     <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
       <span class="carousel-control-prev-icon"></span>
     </button>
@@ -142,11 +154,21 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" class="form-control" id="regPassword" required>
+          <div class="input-group">
+            <input type="password" class="form-control" id="regPassword" required>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('regPassword', this)">
+              <span class="eye-icon">👁️</span>
+            </button>
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Nhập lại Password</label>
-          <input type="password" class="form-control" id="regPasswordConfirm" required>
+          <div class="input-group">
+            <input type="password" class="form-control" id="regPasswordConfirm" required>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('regPasswordConfirm', this)">
+              <span class="eye-icon">👁️</span>
+            </button>
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Vai trò</label>
@@ -172,7 +194,12 @@
         </div>
         <div class="mb-3">
           <label class="form-label">Password</label>
-          <input type="password" class="form-control" id="loginPassword" required>
+          <div class="input-group">
+            <input type="password" class="form-control" id="loginPassword" required>
+            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('loginPassword', this)">
+              <span class="eye-icon">👁️</span>
+            </button>
+          </div>
         </div>
         <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
         <p class="text-center mt-3">Chưa có tài khoản? <a href="#" onclick="showPage('register')">Đăng ký ngay</a></p>

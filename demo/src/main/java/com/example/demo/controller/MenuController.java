@@ -32,8 +32,13 @@ public class MenuController {
                 return ResponseEntity.badRequest().body("Giá món ăn phải lớn hơn 0");
             }
 
+            // ✅ Tự động set ảnh mặc định nếu không có
+            if (food.getImage() == null || food.getImage().trim().isEmpty()) {
+                food.setImage("https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400");
+            }
+
             Food savedFood = foodRepository.save(food);
-            System.out.println("✅ Added new food: " + savedFood.getName());
+            System.out.println("✅ Added new food: " + savedFood.getName() + " (Image: " + savedFood.getImage() + ")");
             return ResponseEntity.status(HttpStatus.CREATED).body(savedFood);
         } catch (Exception e) {
             System.err.println("❌ Error adding food: " + e.getMessage());
@@ -55,7 +60,7 @@ public class MenuController {
         }
     }
 
-    // ========== READ BY ID ========== (THÊM MỚI)
+    // ========== READ BY ID ==========
     @GetMapping("/menu/{id}")
     public ResponseEntity<?> getFoodById(@PathVariable int id) {
         try {
@@ -96,9 +101,17 @@ public class MenuController {
                 existingFood.setName(updatedFood.getName());
                 existingFood.setPrice(updatedFood.getPrice());
                 existingFood.setDescription(updatedFood.getDescription());
+                
+                // ✅ Cập nhật image
+                if (updatedFood.getImage() != null && !updatedFood.getImage().trim().isEmpty()) {
+                    existingFood.setImage(updatedFood.getImage());
+                } else {
+                    // Nếu không có image mới, giữ nguyên image cũ
+                    // Hoặc có thể set ảnh mặc định
+                }
 
                 Food savedFood = foodRepository.save(existingFood);
-                System.out.println("✏️ Updated food: " + savedFood);
+                System.out.println("✏️ Updated food: " + savedFood + " (Image: " + savedFood.getImage() + ")");
                 return ResponseEntity.ok(savedFood);
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)

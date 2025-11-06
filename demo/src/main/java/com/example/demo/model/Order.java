@@ -23,14 +23,11 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderDetail> orderDetails;
 
-    // ===============================================
-    // THÊM LIÊN KẾT TỚI USER
-    // ===============================================
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "username") // Tên cột trong DB (ví dụ: "username")
-    @JsonIgnore // Bỏ qua khi gửi JSON, tránh lỗi lặp vô hạn
+    @JoinColumn(name = "username") 
+    @JsonIgnore 
     private User user;
-    // ===============================================
 
     public Order() {
         this.orderDetails = new ArrayList<>();
@@ -45,7 +42,6 @@ public class Order {
         this.total = 0;
     }
 
-    // ... (Getter/Setter cũ của bạn: getOrderId, getOrderDate, ...)
     public int getOrderId() { return orderId; }
     public Date getOrderDate() { return orderDate; }
     public String getStatus() { return status; }
@@ -61,9 +57,7 @@ public class Order {
     public void setStatus(String status) { this.status = status; }
     public void setTotal(double total) { this.total = total; }
     
-    // ===============================================
-    // THÊM GETTER & SETTER CHO USER
-    // ===============================================
+
     public User getUser() {
         return user;
     }
@@ -71,7 +65,6 @@ public class Order {
     public void setUser(User user) {
         this.user = user;
     }
-    // ===============================================
 
     public void addOrderDetail(OrderDetail detail) {
         orderDetails.add(detail);
@@ -91,7 +84,6 @@ public class Order {
 
     @Override
     public String toString() {
-        // Cập nhật toString để bao gồm cả username (nếu có)
         String userInfo = (user != null) ? ", user=" + user.getUsername() : "";
         return "Order{" +
                 "orderId=" + orderId +

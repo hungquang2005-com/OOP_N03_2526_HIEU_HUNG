@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.List; // <-- Tui đã thêm import này (mặc dù java.util.* đã bao gồm)
+import java.util.List; 
 
 @RestController
 @RequestMapping("/api")
