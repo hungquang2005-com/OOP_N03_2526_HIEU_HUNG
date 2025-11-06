@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional; 
-import java.util.Date; // Đảm bảo đã import Date
+import java.util.Date; 
 
 @RestController
 @RequestMapping("/api")
@@ -34,12 +34,10 @@ public class AuthController {
                 User user = userOpt.get();
                 if (user.getPassword().equals(password)) {
                     
-                    // START: KIỂM TRA TRẠNG THÁI VÔ HIỆU HÓA TRƯỚC KHI CHO ĐĂNG NHẬP
                     if (!user.isEnabled()) {
                         System.out.println("❌ Login failed: User is disabled " + username);
                         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Tài khoản của bạn đã bị vô hiệu hóa.");
                     }
-                    // END: KIỂM TRA VÔ HIỆU HÓA
 
                     System.out.println("✅ User logged in: " + username);
                     
@@ -59,9 +57,6 @@ public class AuthController {
         }
     }
 
-    // ===========================================
-    // HÀM ĐĂNG KÝ (FIX LỖI THIẾU ENDPOINT)
-    // ===========================================
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> payload) {
         try {
@@ -71,7 +66,7 @@ public class AuthController {
 
             String username = payload.get("username");
             String password = payload.get("password");
-            String role = payload.getOrDefault("role", "USER"); // Mặc định role là 'USER'
+            String role = payload.getOrDefault("role", "USER"); 
 
             if (username == null || username.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body("Username không được để trống");
@@ -80,16 +75,13 @@ public class AuthController {
                 return ResponseEntity.badRequest().body("Password không được để trống");
             }
 
-            // 1. KIỂM TRA TÊN USER ĐÃ TỒN TẠI
             if (userRepository.findByUsername(username).isPresent()) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body("Username đã tồn tại.");
             }
 
-            // 2. TẠO USER MỚI
             User newUser = new User(username, password, role);
-            newUser.setEnabled(true); // Mặc định tài khoản mới là kích hoạt
+            newUser.setEnabled(true); 
 
-            // 3. LƯU VÀO DATABASE
             userRepository.save(newUser);
             
             System.out.println("✅ User registered: " + newUser.getUsername() + " with role: " + newUser.getRole());
@@ -100,7 +92,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi khi đăng ký user: " + e.getMessage());
         }
     }
-    // ===========================================
     
 
     @GetMapping("/users")
@@ -119,7 +110,6 @@ public class AuthController {
         }
     }
     
-    // Admin: Cập nhật thông tin user (password/role)
     @PutMapping("/users/{username}")
     public ResponseEntity<?> updateUser(@PathVariable String username, @RequestBody Map<String, String> payload) {
         try {
@@ -130,13 +120,11 @@ public class AuthController {
 
             User user = userOpt.get();
             
-            // Cập nhật Password (nếu có)
             String newPassword = payload.get("password");
             if (newPassword != null && !newPassword.trim().isEmpty()) {
                 user.setPassword(newPassword); 
             }
 
-            // Cập nhật Role (nếu có)
             String newRole = payload.get("role");
             if (newRole != null && !newRole.trim().isEmpty()) {
                 user.setRole(newRole);
@@ -180,7 +168,6 @@ public class AuthController {
         }
     }
 
-    // Admin: Xóa user
     @DeleteMapping("/users/{username}")
     public ResponseEntity<?> deleteUser(@PathVariable String username) {
         try {

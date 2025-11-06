@@ -24,7 +24,6 @@ public class StatisticsController {
     @Autowired
     private OrderRepository orderRepository;
 
-    // ===== FIX: THÊM chartData VÀO RESPONSE =====
     @GetMapping("/revenue")
     public ResponseEntity<?> getRevenueStats(
         @RequestParam String period,
@@ -50,7 +49,6 @@ public class StatisticsController {
                     totalRevenue = dailyOrders.stream().mapToDouble(Order::getTotal).sum();
                     totalOrders = dailyOrders.size();
                     
-                    // Tạo chartData theo giờ trong ngày
                     Map<Integer, Double> hourlyRevenue = new HashMap<>();
                     for (Order order : dailyOrders) {
                         int hour = order.getOrderDate().toInstant().atZone(ZoneId.systemDefault()).getHour();
@@ -83,7 +81,6 @@ public class StatisticsController {
                     totalRevenue = weeklyOrders.stream().mapToDouble(Order::getTotal).sum();
                     totalOrders = weeklyOrders.size();
                     
-                    // Tạo chartData theo 7 ngày trong tuần
                     Map<String, Double> dailyRevenueInWeek = new HashMap<>();
                     for (Order order : weeklyOrders) {
                         LocalDate orderDate = order.getOrderDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -113,7 +110,6 @@ public class StatisticsController {
                     totalRevenue = monthlyOrders.stream().mapToDouble(Order::getTotal).sum();
                     totalOrders = monthlyOrders.size();
                     
-                    // Tạo chartData theo ngày trong tháng
                     Map<Integer, Double> dailyRevenueInMonth = new HashMap<>();
                     for (Order order : monthlyOrders) {
                         LocalDate orderDate = order.getOrderDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -143,7 +139,6 @@ public class StatisticsController {
                     totalRevenue = yearlyOrders.stream().mapToDouble(Order::getTotal).sum();
                     totalOrders = yearlyOrders.size();
                     
-                    // Tạo chartData theo 12 tháng
                     Map<Integer, Double> monthlyRevenueInYear = new HashMap<>();
                     for (Order order : yearlyOrders) {
                         LocalDate orderDate = order.getOrderDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
@@ -165,7 +160,6 @@ public class StatisticsController {
                     totalRevenue = allOrders.stream().mapToDouble(Order::getTotal).sum();
                     totalOrders = allOrders.size();
                     
-                    // Tạo chartData theo năm
                     Map<Integer, Double> yearlyRevenue = new HashMap<>();
                     for (Order order : allOrders) {
                         LocalDate orderDate = order.getOrderDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();

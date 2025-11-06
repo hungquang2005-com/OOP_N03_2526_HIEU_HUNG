@@ -17,9 +17,6 @@ public class TableController {
     @Autowired
     private TableRepository tableRepository;
 
-    // ===============================================
-    // READ ALL (GET /api/tables) - ĐOẠN ĐƯỢC THÊM VÀO
-    // ===============================================
     @GetMapping("/tables")
     public ResponseEntity<?> getAllTables() {
         try {
@@ -32,11 +29,6 @@ public class TableController {
         }
     }
 
-    // ===============================================
-    // PHẦN CODE CŨ CỦA BẠN (vẫn giữ nguyên)
-    // ===============================================
-
-    // ========== CREATE ==========
     @PostMapping("/tables/reserve")
     public ResponseEntity<?> reserveTables(@RequestBody List<Map<String, Integer>> tablesToReserve) {
         try {

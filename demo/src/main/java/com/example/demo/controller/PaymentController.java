@@ -87,7 +87,6 @@ public class PaymentController {
         }
     }
 
-    // ========== READ BY ID ========== (THÊM MỚI)
     @GetMapping("/payments/{paymentId}")
     public ResponseEntity<?> getPaymentById(@PathVariable int paymentId) {
         try {

@@ -11,11 +11,9 @@ let selectedPaymentMethod = null;
 let createdOrderId = null;
 let orderType = null;
 let occupiedTables = new Set();
-let isProcessingPayment = false; // Cờ chống nhấn đúp
+let isProcessingPayment = false; 
 
-// --- NEW: Key for takeaway order awaiting payment ---
 const PENDING_TAKEAWAY_KEY = 'pendingTakeawayPayment';
-// --- NEW: Biến lưu trữ ID của Interval kiểm tra session ---
 let sessionCheckIntervalId = null; 
 
 function getPendingStorageKeyForUser(username) {
@@ -23,27 +21,22 @@ function getPendingStorageKeyForUser(username) {
   return `pendingOrders_${username}`;
 }
 
-// Cập nhật hàm để lọc đơn 0đ
 function loadPendingForCurrentUser() {
-  let loadedOrders = []; // Biến tạm
+  let loadedOrders = [];
   if (currentUser && currentUser.username) {
     const key = getPendingStorageKeyForUser(currentUser.username);
     const raw = localStorage.getItem(key);
     loadedOrders = raw ? JSON.parse(raw) : [];
   } else {
-    // guest
     const raw = localStorage.getItem(getPendingStorageKeyForUser(null));
     loadedOrders = raw ? JSON.parse(raw) : [];
   }
 
   const originalCount = loadedOrders.length;
-  // Lọc bỏ bất kỳ đơn hàng nào có total <= 0
   pendingOrders = loadedOrders.filter(order => order.total && order.total > 0);
-
-  // Nếu phát hiện và lọc bỏ đơn 0đ, tự động lưu lại danh sách "sạch"
   if (pendingOrders.length < originalCount) {
     console.log(`Đã tự động lọc bỏ ${originalCount - pendingOrders.length} đơn hàng không hợp lệ (0đ).`);
-    savePendingForCurrentUser(); // Dùng hàm có sẵn để lưu lại danh sách sạch
+    savePendingForCurrentUser();
   }
 }
 
@@ -52,18 +45,16 @@ function savePendingForCurrentUser() {
     const key = getPendingStorageKeyForUser(currentUser.username);
     localStorage.setItem(key, JSON.stringify(pendingOrders));
   } else {
-    // guest pending (optional, useful across reloads in same browser)
+
     localStorage.setItem(getPendingStorageKeyForUser(null), JSON.stringify(pendingOrders));
   }
 }
 
-// Remove a specific pending order and persist
 function removePendingById(orderId) {
   pendingOrders = pendingOrders.filter(o => o.orderId !== orderId);
   savePendingForCurrentUser();
 }
 
-// --- NEW: Helper function to save takeaway payment context ---
 function savePendingTakeaway(orderId, total, items, discountApplied, discountCode, customerName, customerPhone) {
     const data = { 
         orderId, 
@@ -78,20 +69,17 @@ function savePendingTakeaway(orderId, total, items, discountApplied, discountCod
     localStorage.setItem(PENDING_TAKEAWAY_KEY, JSON.stringify(data));
 }
 
-// --- NEW: Helper function to clear takeaway payment context ---
 function clearPendingTakeaway() {
     localStorage.removeItem(PENDING_TAKEAWAY_KEY);
-    createdOrderId = null; // Clear global state too
+    createdOrderId = null; 
 }
 
 // --- NEW: Hủy đơn hàng trên Server ---
 async function cancelOrderOnServer(orderId) {
     try {
-        // Gửi yêu cầu PUT để cập nhật trạng thái đơn hàng thành 'Đã Hủy'
         const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            // Giả định backend chấp nhận payload { status: "Đã Hủy" }
             body: JSON.stringify({ status: 'Đã Hủy' }) 
         });
 
@@ -984,26 +972,24 @@ function showEmptyHistory(historyList) {
   historyList.innerHTML = `<div class="text-center p-5"><div style="font-size: 4rem; margin-bottom: 20px;">📋</div><h4>${message}</h4><p class="text-muted">Hãy đặt món và thanh toán để xem lịch sử đơn hàng</p>${!currentUser ? '<p class="text-warning">⚠️ Lưu ý: Lịch sử guest sẽ bị xóa khi đóng trình duyệt</p>' : ''}<button class="btn btn-primary mt-3" onclick="showPage('order')">Đặt hàng ngay</button></div>`;
 }
 
-// Sắp xếp Lịch sử Server (mới nhất lên đầu) VÀ CẬP NHẬT MÀU BADGE HỦY
 function displayServerOrders(historyList, serverOrders) {
   let html = '<div class="alert alert-info mb-3">✅ Lịch sử đơn hàng của bạn (đã đăng nhập)</div>';
   
-  // Sắp xếp theo orderId giảm dần (mới nhất trước)
   serverOrders.sort((a, b) => b.orderId - a.orderId);
 
   serverOrders.forEach(order => {
-    // Thêm kiểm tra trạng thái để hiển thị cảnh báo
-    const isPending = order.status === 'Đang xử lý' || order.status === 'Chờ thanh toán';
-    const isCancelled = order.status === 'Đã Hủy'; // Kiểm tra trạng thái hủy
 
-    // Chọn màu badge
+    const isPending = order.status === 'Đang xử lý' || order.status === 'Chờ thanh toán';
+    const isCancelled = order.status === 'Đã Hủy'; 
+
+ 
     let statusBadge;
     if (isCancelled) {
-        statusBadge = `<span class="badge bg-danger">Đã Hủy</span>`; // Màu đỏ cho Đã Hủy
+        statusBadge = `<span class="badge bg-danger">Đã Hủy</span>`;
     } else if (isPending) {
         statusBadge = `<span class="badge bg-warning text-dark">${order.status || 'Đang xử lý'}</span>`;
     } else {
-        statusBadge = `<span class="badge bg-success">${order.status}</span>`; // Màu xanh cho Đã thanh toán
+        statusBadge = `<span class="badge bg-success">${order.status}</span>`; 
     }
 
     const pendingNote = isPending ? '<p class="text-danger small mt-2">⚠️ Đơn này chưa hoàn tất. Vui lòng kiểm tra tab **Chờ Thanh Toán** (nếu là đơn ăn tại chỗ).</p>' : '';
@@ -1029,16 +1015,13 @@ function displayServerOrders(historyList, serverOrders) {
   historyList.innerHTML = html;
 }
 
-// Sắp xếp Lịch sử Local/Guest (mới nhất lên đầu)
 function displayLocalOrders(historyList) {
   let html = '<div class="alert alert-warning mb-3">⚠️ Lịch sử tạm thời (chưa đăng nhập) - Sẽ bị xóa khi thoát</div>';
 
-  // Sắp xếp bằng cách đảo ngược mảng (giả định đơn mới được push vào cuối)
   const sortedHistory = [...orderHistory].reverse();
 
   sortedHistory.forEach(order => {
     const isTableOrder = order.type === 'dine-in';
-    // Đơn local thường chỉ có 2 trạng thái: 'Đã thanh toán' (thành công) hoặc 'Đã Hủy' (nếu có logic hủy)
     const isCancelled = order.status === 'Đã Hủy'; 
     const statusBadge = isCancelled ? 
         `<span class="badge bg-danger">Đã Hủy</span>` : 
@@ -1050,9 +1033,7 @@ function displayLocalOrders(historyList) {
   historyList.innerHTML = html;
 }
 
-// ---------------------------
-// Clear order history (user -> server, guest -> localStorage)
-// ---------------------------
+
 async function clearOrderHistory() {
   if (!confirm('Bạn có chắc muốn xóa toàn bộ lịch sử đơn hàng không?')) return;
   if (currentUser && currentUser.username) {
@@ -1068,10 +1049,6 @@ async function clearOrderHistory() {
   }
   displayOrderHistory();
 }
-
-// ---------------------------
-// Init
-// ---------------------------
 document.addEventListener('DOMContentLoaded', function() {
   checkAPIConnection();
   loadMenuFromAPI();
@@ -1087,8 +1064,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const userSec = document.getElementById('userSection'); if (userSec) userSec.style.display = 'flex';
       const unameEl = document.getElementById('username'); if (unameEl) unameEl.textContent = currentUser.username;
       
-      // Tải các đơn hàng chờ CỦA NGƯI DÙNG NÀY
-      loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+      loadPendingForCurrentUser(); 
       console.log('Restored session for user:', currentUser.username);
       
       // 🌟 BẮT ĐẦU KIỂM TRA TRẠNG THÁI SESSION ĐỊNH KỲ 🌟
@@ -1099,12 +1075,11 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Failed to parse saved user, logging out.', e);
       currentUser = null;
       localStorage.removeItem('currentUser');
-      // Tải đơn hàng chờ của guest (vì khôi phục lỗi)
-      loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+      loadPendingForCurrentUser(); 
     }
   } else {
-    // Không có user, tải đơn hàng chờ của guest
-    loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+    
+    loadPendingForCurrentUser();
   }
   // ===================================
 
@@ -1114,30 +1089,26 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const pendingData = JSON.parse(pendingTakeawayRaw);
       createdOrderId = pendingData.orderId;
-      currentOrder = pendingData.items; // Khôi phục giỏ hàng
+      currentOrder = pendingData.items; 
       discountApplied = pendingData.discountApplied;
       discountCode = pendingData.discountCode;
 
       if (confirm(`⚠️ Đã phát hiện đơn hàng mang về #${createdOrderId} chưa hoàn tất thanh toán (cho khách hàng ${pendingData.customerName || 'Vô danh'}). Bạn có muốn tiếp tục?`)) {
-        // Khôi phục hiển thị trên trang thanh toán
         document.getElementById('paymentTotal').textContent = pendingData.total.toLocaleString() + ' VND';
         document.getElementById('displayOrderId').textContent = '#' + createdOrderId;
         
-        // Cần khôi phục cả orderType để proceedToPayment biết đây là đơn mang về
         orderType = 'takeaway';
         showPage('payment');
-        // Khôi phục các giá trị trong form khách hàng (cho giao diện)
         const customerNameInput = document.getElementById('customerName');
         const customerPhoneInput = document.getElementById('customerPhone');
         if (customerNameInput) customerNameInput.value = pendingData.customerName || '';
         if (customerPhoneInput) customerPhoneInput.value = pendingData.customerPhone || '';
-        updateOrderSummary(); // Cập nhật lại summary dựa trên currentOrder được khôi phục
+        updateOrderSummary(); 
       } else {
-        // Nếu người dùng chọn không tiếp tục, xóa trạng thái cục bộ VÀ HỦY TRÊN SERVER
         alert(`Đang hủy đơn hàng mang về #${createdOrderId} trên Server...`);
-        cancelOrderOnServer(createdOrderId); // Hủy trên Server
+        cancelOrderOnServer(createdOrderId); 
         clearPendingTakeaway();
-        currentOrder = []; // Xóa giỏ hàng đã khôi phục (vì người dùng hủy)
+        currentOrder = []; 
         discountApplied = 0;
         discountCode = '';
         updateOrderSummary();
@@ -1198,7 +1169,6 @@ function checkSessionStatus() {
     fetch(`${API_BASE_URL}/users/${currentUser.username}`)
         .then(response => {
             if (response.status === 404) {
-                // Nếu user không tồn tại, coi như đã bị vô hiệu hóa/xóa
                 return { enabled: false }; 
             }
             return response.json();
@@ -1206,12 +1176,11 @@ function checkSessionStatus() {
         .then(user => {
             if (user && !user.enabled) {
                 alert("Thông báo: Tài khoản của bạn đã bị vô hiệu hóa bởi Quản trị viên và sẽ tự động đăng xuất.");
-                // Gọi hàm logout để xử lý việc xóa session và chuyển hướng
+
                 logout();                 
             }
         })
         .catch(error => {
             console.error('Lỗi kiểm tra trạng thái phiên làm việc:', error);
-            // Tiếp tục chạy định kỳ nếu lỗi kết nối
         });
 }

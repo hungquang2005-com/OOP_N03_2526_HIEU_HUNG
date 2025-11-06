@@ -6,7 +6,7 @@ import com.example.demo.model.OrderDetail;
 import com.example.demo.model.User;
 import com.example.demo.repository.FoodRepository;
 import com.example.demo.repository.OrderRepository;
-import com.example.demo.repository.UserRepository; // THÊM
+import com.example.demo.repository.UserRepository; 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +25,7 @@ public class OrderController {
     private FoodRepository foodRepository;
     
     @Autowired
-    private UserRepository userRepository; // THÊM
+    private UserRepository userRepository; 
    
     @PostMapping("/orders")
     public ResponseEntity<?> createOrder(@RequestBody Map<String, Object> payload) {
@@ -43,7 +43,6 @@ public class OrderController {
             Order newOrder = new Order();
             newOrder.setStatus("Đang xử lý");
             
-            // ===== THÊM: Kiểm tra và gán User nếu có đăng nhập =====
             String username = (String) payload.get("username");
             if (username != null && !username.trim().isEmpty()) {
                 Optional<User> userOpt = userRepository.findById(username);
@@ -56,7 +55,6 @@ public class OrderController {
             } else {
                 System.out.println("ℹ️ Đơn hàng không có user (guest order)");
             }
-            // ======================================================
             
             for (Map<String, Integer> item : items) {
                 Integer foodId = item.get("foodId");
@@ -97,7 +95,6 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
     
-    // ===== THÊM: API lấy lịch sử đơn hàng của user =====
     @GetMapping("/orders/history/{username}")
     public ResponseEntity<?> getOrderHistoryByUser(@PathVariable String username) {
         try {
@@ -117,7 +114,6 @@ public class OrderController {
                     .body("Lỗi khi lấy lịch sử đơn hàng");
         }
     }
-    // ==================================================
     
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<?> getOrderById(@PathVariable int orderId) {
@@ -159,7 +155,6 @@ public class OrderController {
         }
     }
 
-    // THÊM VÀO OrderController.java
 @DeleteMapping("/orders/clear/{username}")
 public ResponseEntity<?> clearUserOrderHistory(@PathVariable String username) {
     try {
@@ -176,7 +171,6 @@ public ResponseEntity<?> clearUserOrderHistory(@PathVariable String username) {
             return ResponseEntity.ok("Không có đơn hàng nào để xóa");
         }
         
-        // Xóa tất cả đơn hàng của user
         orderRepository.deleteAll(userOrders);
         
         System.out.println("🗑️ Đã xóa " + userOrders.size() + " đơn hàng của user: " + username);

@@ -21,7 +21,6 @@ public class MenuController {
     @PostMapping("/menu")
     public ResponseEntity<?> addFood(@RequestBody Food food) {
         try {
-            // Validation
             if (food == null) {
                 return ResponseEntity.badRequest().body("Dữ liệu món ăn không hợp lệ");
             }
@@ -32,7 +31,6 @@ public class MenuController {
                 return ResponseEntity.badRequest().body("Giá món ăn phải lớn hơn 0");
             }
 
-            // ✅ Tự động set ảnh mặc định nếu không có
             if (food.getImage() == null || food.getImage().trim().isEmpty()) {
                 food.setImage("https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400");
             }
@@ -83,7 +81,6 @@ public class MenuController {
     @PutMapping("/menu/{id}")
     public ResponseEntity<?> updateFood(@PathVariable int id, @RequestBody Food updatedFood) {
         try {
-            // Validation
             if (updatedFood == null) {
                 return ResponseEntity.badRequest().body("Dữ liệu món ăn không hợp lệ");
             }
@@ -102,12 +99,9 @@ public class MenuController {
                 existingFood.setPrice(updatedFood.getPrice());
                 existingFood.setDescription(updatedFood.getDescription());
                 
-                // ✅ Cập nhật image
                 if (updatedFood.getImage() != null && !updatedFood.getImage().trim().isEmpty()) {
                     existingFood.setImage(updatedFood.getImage());
                 } else {
-                    // Nếu không có image mới, giữ nguyên image cũ
-                    // Hoặc có thể set ảnh mặc định
                 }
 
                 Food savedFood = foodRepository.save(existingFood);
