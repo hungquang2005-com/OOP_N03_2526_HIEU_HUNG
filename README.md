@@ -35,7 +35,7 @@ sở dữ liệu , viết readme. |
 ## 3. Thông tin dự án
 
 - **GitHub Repository:** https://github.com/hungquang2005-com/OOP_N03_2526_HIEU_HUNG  
-- **Video Demo:** *(Sẽ cập nhật sau khi hoàn thiện)*  
+- **Video YTB:** https://youtu.be/mXOg_2wRIg8 
 - **Công nghệ:** Java 17, Spring Boot, MySQL, JPA, Maven  
 
 ---
