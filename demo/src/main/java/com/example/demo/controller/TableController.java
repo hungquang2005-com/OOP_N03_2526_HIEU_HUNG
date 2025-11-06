@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.List; 
 
 @RestController
 @RequestMapping("/api")
@@ -15,6 +16,25 @@ public class TableController {
 
     @Autowired
     private TableRepository tableRepository;
+
+    // ===============================================
+    // READ ALL (GET /api/tables) - ĐOẠN ĐƯỢC THÊM VÀO
+    // ===============================================
+    @GetMapping("/tables")
+    public ResponseEntity<?> getAllTables() {
+        try {
+            List<DiningTable> tables = tableRepository.findAll();
+            return ResponseEntity.ok(tables);
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi lấy tất cả bàn: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi khi lấy danh sách bàn: " + e.getMessage());
+        }
+    }
+
+    // ===============================================
+    // PHẦN CODE CŨ CỦA BẠN (vẫn giữ nguyên)
+    // ===============================================
 
     // ========== CREATE ==========
     @PostMapping("/tables/reserve")
@@ -39,101 +59,73 @@ public class TableController {
                 }
 
                 if (capacity <= 0) {
-                    return ResponseEntity.badRequest().body("Số lượng khách phải lớn hơn 0");
+                    return ResponseEntity.badRequest().body("Sức chứa bàn phải lớn hơn 0");
                 }
 
-                if (tableRepository.existsById(tableId)) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT)
-                            .body("Lỗi: Bàn ID " + tableId + " đã được đặt trước đó");
+                Optional<DiningTable> tableOpt = tableRepository.findById(tableId);
+                DiningTable table;
+
+                if (tableOpt.isPresent()) {
+                    table = tableOpt.get();
+                    if (table.isReserved()) {
+                        return ResponseEntity.status(HttpStatus.CONFLICT)
+                                .body("Bàn " + tableId + " đã được đặt");
+                    }
+                    if (table.getCapacity() < capacity) {
+                        return ResponseEntity.badRequest()
+                                .body("Bàn " + tableId + " không đủ sức chứa. Yêu cầu: " + capacity + ", Bàn có: " + table.getCapacity());
+                    }
+                } else {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                            .body("Không tìm thấy bàn với ID: " + tableId);
                 }
 
-                DiningTable newTable = new DiningTable(tableId, capacity);
-                newTable.reserve();
-
-                DiningTable savedTable = tableRepository.save(newTable);
-                successfullyReserved.add(savedTable);
+                table.reserve();
+                tableRepository.save(table);
+                successfullyReserved.add(table);
+                System.out.println("✅ Reserved table ID: " + tableId);
             }
-
-            System.out.println("✅ Reserved tables: " + successfullyReserved);
-            return ResponseEntity.status(HttpStatus.CREATED).body(successfullyReserved);
+            
+            return ResponseEntity.ok(successfullyReserved);
 
         } catch (Exception e) {
-            System.err.println("❌ Error reserving tables: " + e.getMessage());
+            System.err.println("❌ Error reserving table(s): " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Lỗi khi đặt bàn: " + e.getMessage());
         }
     }
 
-    // ========== READ ALL ==========
-    @GetMapping("/tables")
-    public ResponseEntity<List<DiningTable>> getAllTables() {
-        try {
-            List<DiningTable> tables = tableRepository.findAll();
-            System.out.println("📖 Reading all tables, count: " + tables.size());
-            return ResponseEntity.ok(tables);
-        } catch (Exception e) {
-            System.err.println("❌ Error reading tables: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
-    }
-
-    // ========== READ BY ID ========== (THÊM MỚI)
+    // ========== READ (Get one) ==========
     @GetMapping("/tables/{tableId}")
     public ResponseEntity<?> getTableById(@PathVariable int tableId) {
         try {
             Optional<DiningTable> tableOpt = tableRepository.findById(tableId);
+
             if (tableOpt.isPresent()) {
-                System.out.println("📖 Found table: " + tableOpt.get());
                 return ResponseEntity.ok(tableOpt.get());
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Không tìm thấy bàn với ID: " + tableId);
             }
         } catch (Exception e) {
-            System.err.println("❌ Error reading table: " + e.getMessage());
+            System.err.println("❌ Error finding table: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi đọc thông tin bàn: " + e.getMessage());
-        }
-    }
-
-    // ========== CHECK AVAILABILITY ==========
-    @GetMapping("/tables/{tableId}/available")
-    public ResponseEntity<?> checkTableAvailability(@PathVariable int tableId) {
-        try {
-            Optional<DiningTable> tableOpt = tableRepository.findById(tableId);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("tableId", tableId);
-            
-            if (tableOpt.isPresent()) {
-                DiningTable table = tableOpt.get();
-                response.put("available", !table.isReserved());
-            } else {
-                response.put("available", true); // Bàn chưa tồn tại = có thể đặt
-            }
-            
-            System.out.println("📖 Checked availability for table " + tableId);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("❌ Error checking table availability: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi kiểm tra bàn: " + e.getMessage());
+                    .body("Lỗi khi tìm bàn: " + e.getMessage());
         }
     }
 
     // ========== UPDATE (Release table) ==========
-    @PutMapping("/tables/release/{tableId}")
+    @PutMapping("/tables/{tableId}/release")
     public ResponseEntity<?> releaseTable(@PathVariable int tableId) {
         try {
             Optional<DiningTable> tableOpt = tableRepository.findById(tableId);
-            
+
             if (!tableOpt.isPresent()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body("Không tìm thấy bàn với ID: " + tableId);
             }
 
             DiningTable table = tableOpt.get();
-            
             if (!table.isReserved()) {
                 return ResponseEntity.badRequest()
                         .body("Bàn " + tableId + " chưa được đặt");

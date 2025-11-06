@@ -1,111 +1,173 @@
-// API Configuration
 const API_BASE_URL = 'http://localhost:8082/api';
 
-let currentUser = null;
-let currentOrder = [];
-let selectedPaymentMethod = null;
+let currentUser = null;         
+let currentOrder = [];        
+let pendingOrders = [];         
+let orderHistory = [];          
+let menuData = [];
 let discountApplied = 0;
 let discountCode = '';
-let orderHistory = [];
-let pendingOrders = [];
-let menuData = [];
+let selectedPaymentMethod = null;
 let createdOrderId = null;
 let orderType = null;
-let occupiedTables = new Set(); // Lưu danh sách bàn đang được sử dụng
+let occupiedTables = new Set();
+let isProcessingPayment = false; // Cờ chống nhấn đúp
 
-// Get current day discount
+// --- NEW: Key for takeaway order awaiting payment ---
+const PENDING_TAKEAWAY_KEY = 'pendingTakeawayPayment';
+// --- NEW: Biến lưu trữ ID của Interval kiểm tra session ---
+let sessionCheckIntervalId = null; 
+
+function getPendingStorageKeyForUser(username) {
+  if (!username) return 'pending_orders_guest';
+  return `pendingOrders_${username}`;
+}
+
+// Cập nhật hàm để lọc đơn 0đ
+function loadPendingForCurrentUser() {
+  let loadedOrders = []; // Biến tạm
+  if (currentUser && currentUser.username) {
+    const key = getPendingStorageKeyForUser(currentUser.username);
+    const raw = localStorage.getItem(key);
+    loadedOrders = raw ? JSON.parse(raw) : [];
+  } else {
+    // guest
+    const raw = localStorage.getItem(getPendingStorageKeyForUser(null));
+    loadedOrders = raw ? JSON.parse(raw) : [];
+  }
+
+  const originalCount = loadedOrders.length;
+  // Lọc bỏ bất kỳ đơn hàng nào có total <= 0
+  pendingOrders = loadedOrders.filter(order => order.total && order.total > 0);
+
+  // Nếu phát hiện và lọc bỏ đơn 0đ, tự động lưu lại danh sách "sạch"
+  if (pendingOrders.length < originalCount) {
+    console.log(`Đã tự động lọc bỏ ${originalCount - pendingOrders.length} đơn hàng không hợp lệ (0đ).`);
+    savePendingForCurrentUser(); // Dùng hàm có sẵn để lưu lại danh sách sạch
+  }
+}
+
+function savePendingForCurrentUser() {
+  if (currentUser && currentUser.username) {
+    const key = getPendingStorageKeyForUser(currentUser.username);
+    localStorage.setItem(key, JSON.stringify(pendingOrders));
+  } else {
+    // guest pending (optional, useful across reloads in same browser)
+    localStorage.setItem(getPendingStorageKeyForUser(null), JSON.stringify(pendingOrders));
+  }
+}
+
+// Remove a specific pending order and persist
+function removePendingById(orderId) {
+  pendingOrders = pendingOrders.filter(o => o.orderId !== orderId);
+  savePendingForCurrentUser();
+}
+
+// --- NEW: Helper function to save takeaway payment context ---
+function savePendingTakeaway(orderId, total, items, discountApplied, discountCode, customerName, customerPhone) {
+    const data = { 
+        orderId, 
+        total, 
+        items, 
+        discountApplied, 
+        discountCode, 
+        customerName, 
+        customerPhone, 
+        timestamp: Date.now() 
+    };
+    localStorage.setItem(PENDING_TAKEAWAY_KEY, JSON.stringify(data));
+}
+
+// --- NEW: Helper function to clear takeaway payment context ---
+function clearPendingTakeaway() {
+    localStorage.removeItem(PENDING_TAKEAWAY_KEY);
+    createdOrderId = null; // Clear global state too
+}
+
+// --- NEW: Hủy đơn hàng trên Server ---
+async function cancelOrderOnServer(orderId) {
+    try {
+        // Gửi yêu cầu PUT để cập nhật trạng thái đơn hàng thành 'Đã Hủy'
+        const res = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            // Giả định backend chấp nhận payload { status: "Đã Hủy" }
+            body: JSON.stringify({ status: 'Đã Hủy' }) 
+        });
+
+        if (res.ok) {
+            console.log(`✅ Đã hủy đơn hàng #${orderId} trên Server.`);
+        } else {
+            const err = await res.text();
+            console.error(`❌ Lỗi hủy đơn hàng #${orderId} trên Server:`, err);
+        }
+    } catch (err) {
+        console.error(`❌ Lỗi kết nối khi cố gắng hủy đơn hàng #${orderId}:`, err);
+    }
+}
+
+
 function getDayDiscount() {
   const now = new Date();
   const day = now.getDay();
-  
-  if (day === 1) {
-    return {
-      active: true,
-      percent: 5,
-      message: '🎉 Ưu đãi thứ 2: Giảm 5% tất cả món ăn!'
-    };
-  }
-  return {
-    active: false,
-    percent: 0,
-    message: ''
-  };
+  if (day === 1) return { active: true, percent: 5, message: '🎉 Ưu đãi thứ 2: Giảm 5% tất cả món ăn!' };
+  return { active: false, percent: 0, message: '' };
 }
 
-// Check API connection on load
 async function checkAPIConnection() {
   try {
-    const response = await fetch(`${API_BASE_URL}/menu`);
-    if (response.ok) {
-      document.getElementById('apiStatus').innerHTML = '✅ Đã kết nối Backend';
-      document.getElementById('apiStatus').className = 'text-success';
+    const res = await fetch(`${API_BASE_URL}/menu`);
+    if (res.ok) {
+      const el = document.getElementById('apiStatus');
+      if (el) { el.innerHTML = '✅ Đã kết nối Backend'; el.className = 'text-success'; }
       return true;
     }
-  } catch (error) {
-    document.getElementById('apiStatus').innerHTML = '❌ Không kết nối được Backend';
-    document.getElementById('apiStatus').className = 'text-danger';
-    console.error('API Connection Error:', error);
+  } catch (e) {
+    const el = document.getElementById('apiStatus');
+    if (el) { el.innerHTML = '❌ Không kết nối được Backend'; el.className = 'text-danger'; }
+    console.error('API Connection Error:', e);
   }
   return false;
 }
 
-// Load menu from API
+// ---------------------------
+// Menu load & display (keeps original structure)
+// ---------------------------
 async function loadMenuFromAPI() {
   const loadingEl = document.getElementById('loadingMenu');
   const menuContainer = document.getElementById('menuContainer');
-  
   try {
-    loadingEl.style.display = 'block';
-    const response = await fetch(`${API_BASE_URL}/menu`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to load menu');
-    }
-    
-    menuData = await response.json();
-    loadingEl.style.display = 'none';
-    
+    if (loadingEl) loadingEl.style.display = 'block';
+    const res = await fetch(`${API_BASE_URL}/menu`);
+    if (!res.ok) throw new Error('Failed to load menu');
+    menuData = await res.json();
+    if (loadingEl) loadingEl.style.display = 'none';
     displayMenu();
-  } catch (error) {
-    loadingEl.style.display = 'none';
-    menuContainer.innerHTML = `
-      <div class="col-12 text-center">
-        <div class="alert alert-warning">
-          <h5>⚠️ Không thể tải thực đơn từ server</h5>
-          <p>Vui lòng kiểm tra kết nối Backend hoặc thử lại sau.</p>
-        </div>
-      </div>
-    `;
-    console.error('Menu Loading Error:', error);
+  } catch (err) {
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (menuContainer) {
+      menuContainer.innerHTML = `<div class="col-12 text-center"><div class="alert alert-warning">
+        <h5>⚠️ Không thể tải thực đơn từ server</h5><p>Vui lòng kiểm tra kết nối Backend hoặc thử lại sau.</p></div></div>`;
+    }
+    console.error('Menu Loading Error:', err);
   }
 }
 
 function displayMenu() {
   const menuContainer = document.getElementById('menuContainer');
   const orderMenuItems = document.getElementById('orderMenuItems');
-  
   const dayDiscount = getDayDiscount();
-  
   let menuHTML = '';
   let orderHTML = '';
-  
   if (dayDiscount.active) {
-    menuHTML += `
-      <div class="col-12 mb-4">
-        <div class="alert alert-info text-center">
-          <h5 class="mb-0">${dayDiscount.message}</h5>
-        </div>
-      </div>
-    `;
+    menuHTML += `<div class="col-12 mb-4"><div class="alert alert-info text-center"><h5 class="mb-0">${dayDiscount.message}</h5></div></div>`;
   }
-  
   menuData.forEach(item => {
-    const imageUrl = `https://images.unsplash.com/photo-${Math.random() > 0.5 ? '1585032226651-759b368d7246' : '1582878826629-29b7ad1cdc43'}?w=400`;
-    
+    const imageUrl = item.image || '';
     const originalPrice = item.price;
     const discountedPrice = dayDiscount.active ? Math.floor(originalPrice * (1 - dayDiscount.percent / 100)) : originalPrice;
     const hasDayDiscount = dayDiscount.active && discountedPrice < originalPrice;
-    
+
     menuHTML += `
       <div class="col-md-6 col-lg-4 mb-4">
         <div class="menu-item">
@@ -122,7 +184,7 @@ function displayMenu() {
         </div>
       </div>
     `;
-    
+
     orderHTML += `
       <div class="order-item">
         <img src="${imageUrl}" alt="${item.name}">
@@ -140,59 +202,97 @@ function displayMenu() {
       </div>
     `;
   });
-  
-  menuContainer.innerHTML = menuHTML;
-  orderMenuItems.innerHTML = orderHTML;
+
+  if (menuContainer) menuContainer.innerHTML = menuHTML;
+  if (orderMenuItems) orderMenuItems.innerHTML = orderHTML;
 }
 
-function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(pageId + 'Page').classList.add('active');
-  window.scrollTo(0, 0);
-  
-  if (pageId === 'menu') {
-    if (menuData.length === 0) {
-      loadMenuFromAPI();
+// ---------------------------
+// Routing UI
+// --- SỬA LỖI CHẶN VÀ HỦY ĐƠN MANG VỀ TRÊN SERVER ---
+// ---------------------------
+async function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const page = document.getElementById(pageId + 'Page');
+    
+    // 1. Get pending takeaway data
+    const pendingTakeawayRaw = localStorage.getItem(PENDING_TAKEAWAY_KEY);
+    
+    // 2. Check if there's a pending takeaway AND we're navigating away from payment
+    if (pendingTakeawayRaw && pageId !== 'payment') {
+        const pendingData = JSON.parse(pendingTakeawayRaw);
+        
+        // Block navigation and ask user to resolve
+        if (!confirm(`⚠️ Đơn hàng mang về #${pendingData.orderId} đang chờ thanh toán. Bạn phải hoàn tất thanh toán hoặc hủy đơn này để chuyển sang trang khác.\n\nChọn [OK] để HỦY đơn hàng đang chờ thanh toán (và HỦY trên Server).\nChọn [HỦY] để ở lại trang hiện tại và thanh toán.`)) {
+            
+            // User selected CANCEL (HỦY): Stay on the payment page.
+            const paymentPage = document.getElementById('paymentPage');
+            if (paymentPage) paymentPage.classList.add('active');
+            window.scrollTo(0, 0);
+            return; // STOP navigation
+        }
+        
+        // User selected OK: Cancel the order on server and proceed with navigation.
+        alert(`Đang hủy đơn hàng mang về #${pendingData.orderId} trên Server...`);
+        // Gọi hàm hủy đơn trên Server (ASYNC)
+        await cancelOrderOnServer(pendingData.orderId);
+        
+        // Xóa trạng thái cục bộ
+        alert(`✅ Đã hủy đơn hàng mang về #${pendingData.orderId} đang chờ thanh toán. Giỏ hàng cũ đã được xóa.`);
+        clearPendingTakeaway();
+        // Cần reset lại giỏ hàng và discount (vì nó đã được khôi phục trong DOMContentLoaded)
+        currentOrder = []; 
+        discountApplied = 0;
+        discountCode = '';
+        updateOrderSummary();
+        // Fall through to normal navigation to the requested pageId
     }
-  }
-  
-  if (pageId === 'pending') {
-    displayPendingOrders();
-  }
-  
-  if (pageId === 'history') {
-    displayOrderHistory();
-  }
+
+    // 3. Normal navigation (if no block or block was resolved)
+    if (page) page.classList.add('active');
+    window.scrollTo(0, 0);
+    if (pageId === 'menu' && menuData.length === 0) loadMenuFromAPI();
+    if (pageId === 'pending') displayPendingOrders();
+    if (pageId === 'history') displayOrderHistory();
 }
 
+// ---------------------------
+// Order type selection
+// ---------------------------
 function selectOrderType(type) {
   orderType = type;
-  
-  document.querySelectorAll('.order-type-card').forEach(card => {
-    card.classList.remove('selected');
-  });
-  
-  event.currentTarget.classList.add('selected');
-  
+  document.querySelectorAll('.order-type-card').forEach(card => card.classList.remove('selected'));
+  if (typeof event !== 'undefined' && event.currentTarget) event.currentTarget.classList.add('selected');
+
   if (type === 'dine-in') {
-    document.getElementById('tableInfoCard').style.display = 'block';
-    document.getElementById('customerInfoCard').style.display = 'none';
-    document.getElementById('orderButtonText').textContent = 'Thêm vào Chờ Thanh Toán';
-    document.getElementById('reviewButtonText').textContent = 'Thêm vào Chờ Thanh Toán';
+    const t = document.getElementById('tableInfoCard'); if (t) t.style.display = 'block';
+    const c = document.getElementById('customerInfoCard'); if (c) c.style.display = 'none';
+    const ob = document.getElementById('orderButtonText'); if (ob) ob.textContent = 'Thêm vào Chờ Thanh Toán';
+    const rb = document.getElementById('reviewButtonText'); if (rb) rb.textContent = 'Thêm vào Chờ Thanh Toán';
   } else {
-    document.getElementById('tableInfoCard').style.display = 'none';
-    document.getElementById('customerInfoCard').style.display = 'block';
-    document.getElementById('orderButtonText').textContent = 'Xem Lại & Thanh Toán';
-    document.getElementById('reviewButtonText').textContent = 'Xác nhận & Thanh Toán';
+    const t = document.getElementById('tableInfoCard'); if (t) t.style.display = 'none';
+    const c = document.getElementById('customerInfoCard'); if (c) c.style.display = 'block';
+    const ob = document.getElementById('orderButtonText'); if (ob) ob.textContent = 'Xem Lại & Thanh Toán';
+    const rb = document.getElementById('reviewButtonText'); if (rb) rb.textContent = 'Xác nhận & Thanh Toán';
   }
 }
 
+// ---------------------------
+// Register / Login / Logout
+// ---------------------------
+
+// ===========================================
+// HÀM ĐĂNG KÝ (ĐÃ FIX PAYLOAD)
+// ===========================================
 async function register(e) {
   e.preventDefault();
+  
+  // Lấy giá trị từ các input (giả định ID là regUsername, regPassword, regPasswordConfirm)
   const username = document.getElementById('regUsername').value;
   const password = document.getElementById('regPassword').value;
   const confirmPassword = document.getElementById('regPasswordConfirm').value;
-  const role = document.getElementById('regRole').value;
+  // Lấy role (mặc định là 'USER' nếu input regRole không tồn tại)
+  const role = document.getElementById('regRole') ? document.getElementById('regRole').value : 'USER'; 
 
   if (password !== confirmPassword) {
     alert('Mật khẩu không khớp!');
@@ -200,99 +300,171 @@ async function register(e) {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password,
-        confirmPassword: confirmPassword,
-        role: role
-      })
+    const res = await fetch(`${API_BASE_URL}/register`, {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      // Gửi payload chính xác mà Backend mong muốn (username, password, role)
+      body: JSON.stringify({ username, password, role }) 
     });
-
-    if (response.ok) {
-      const message = await response.text();
-      alert('✅ ' + message);
-      showPage('login');
+    
+    if (res.ok) {
+      const msg = await res.text();
+      alert('✅ ' + msg);
+      // Chuyển hướng người dùng sang trang/tab Login sau khi đăng ký thành công
+      const loginTab = document.getElementById('login-tab');
+      if (loginTab) {
+          // Dùng Bootstrap Tab nếu có
+          new bootstrap.Tab(loginTab).show();
+      } else {
+          // Fallback nếu không dùng tab
+          showPage('login'); 
+      }
     } else {
-      const error = await response.text();
-      alert('❌ ' + error);
+      const err = await res.text();
+      alert('❌ Đăng ký thất bại: ' + err);
     }
-  } catch (error) {
-    console.error('Register Error:', error);
-    alert('❌ Không thể kết nối đến server. Vui lòng kiểm tra Backend.');
+  } catch (err) {
+    console.error('Register Error:', err);
+    alert('❌ Không thể kết nối đến server. Vui lòng kiểm tra Backend hoặc đường dẫn API.');
   }
 }
+// ===========================================
 
+// LOGIN: loads per-user pendingOrders + sync guest history -> server
 async function login(e) {
   e.preventDefault();
-  const username = document.getElementById('loginUsername').value;
-  const password = document.getElementById('loginPassword').value;
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value.trim();
 
   try {
-    const response = await fetch(`${API_BASE_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: username,
-        password: password
-      })
+    const res = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, // Đã có header correct
+      body: JSON.stringify({ username, password })
     });
 
-    if (response.ok) {
-      currentUser = await response.json();
-      document.getElementById('authSection').style.display = 'none';
-      document.getElementById('userSection').style.display = 'flex';
-      document.getElementById('username').textContent = currentUser.username;
-      alert('✅ Đăng nhập thành công! Chào ' + currentUser.username);
-      showPage('home');
-    } else {
-      alert('❌ Sai username hoặc password!');
+    if (!res.ok) {
+      const errorText = await res.text();
+      alert('❌ ' + errorText); // Hiển thị thông báo lỗi từ Backend (ví dụ: Tài khoản bị vô hiệu hóa)
+      return;
     }
-  } catch (error) {
-    console.error('Login Error:', error);
+
+    currentUser = await res.json();
+    
+    // Lưu user vào localStorage
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+    // START: KÍCH HOẠT KIỂM TRA SESSION SAU KHI ĐĂNG NHẬP THÀNH CÔNG
+    // Xóa interval cũ nếu có, và bắt đầu interval mới
+    if (sessionCheckIntervalId) clearInterval(sessionCheckIntervalId);
+    sessionCheckIntervalId = setInterval(checkSessionStatus, 10000); 
+    // END: KÍCH HOẠT KIỂM TRA SESSION
+
+    // Load pendingOrders for this user (persisted in localStorage)
+    loadPendingForCurrentUser();
+
+    // If there's guest order history, try import to server then clear guest history
+    const guestHistoryRaw = localStorage.getItem('guestOrderHistory');
+    if (guestHistoryRaw) {
+      try {
+        const guestOrders = JSON.parse(guestHistoryRaw);
+        await fetch(`${API_BASE_URL}/orders/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUser.username, orders: guestOrders })
+        });
+        localStorage.removeItem('guestOrderHistory');
+        orderHistory = [];
+        console.log('✅ Đồng bộ guest history lên server cho', currentUser.username);
+      } catch (err) {
+        console.warn('⚠️ Không thể đồng bộ guest history:', err);
+      }
+    }
+
+    // Update UI
+    const auth = document.getElementById('authSection'); if (auth) auth.style.display = 'none';
+    const userSec = document.getElementById('userSection'); if (userSec) userSec.style.display = 'flex';
+    const unameEl = document.getElementById('username'); if (unameEl) unameEl.textContent = currentUser.username;
+    alert('✅ Đăng nhập thành công! Chào ' + currentUser.username);
+    showPage('home');
+  } catch (err) {
+    console.error('Login Error:', err);
     alert('❌ Không thể kết nối đến server. Vui lòng kiểm tra Backend.');
   }
 }
 
+// ===========================================
+// LOGOUT (FIX LỖI 404)
+// ===========================================
 function logout() {
+  if (!confirm('Bạn có chắc muốn đăng xuất không?')) return;
+
+  // Dừng kiểm tra session
+  if (sessionCheckIntervalId) clearInterval(sessionCheckIntervalId);
+  sessionCheckIntervalId = null;
+
+  // Save current pendingOrders under this username 
+  if (currentUser && currentUser.username) {
+    localStorage.setItem(getPendingStorageKeyForUser(currentUser.username), JSON.stringify(pendingOrders));
+  }
+
+  // Reset state
   currentUser = null;
-  document.getElementById('authSection').style.display = 'flex';
-  document.getElementById('userSection').style.display = 'none';
   currentOrder = [];
   discountApplied = 0;
+  discountCode = '';
+  selectedPaymentMethod = null;
+  createdOrderId = null;
   orderType = null;
-  document.querySelectorAll('.order-type-card').forEach(card => {
-    card.classList.remove('selected');
-  });
-  document.getElementById('tableInfoCard').style.display = 'none';
-  document.getElementById('customerInfoCard').style.display = 'none';
-  showPage('home');
-}
+  orderHistory = [];
 
+  // Xóa user khỏi localStorage
+  localStorage.removeItem('currentUser');
+  // Clear any pending takeaway payment state
+  clearPendingTakeaway();
+
+  // Clear current session pending and occupied tables (in-memory)
+  pendingOrders = [];
+  occupiedTables.clear();
+
+  // Keep guestHistory separate: we remove guest history on logout of guest; if logging out a user, guest data not relevant
+  localStorage.removeItem('guestOrderHistory');
+
+  // UI reset
+  const auth = document.getElementById('authSection'); if (auth) auth.style.display = 'flex';
+  const userSec = document.getElementById('userSection'); if (userSec) userSec.style.display = 'none';
+  document.querySelectorAll('.order-type-card').forEach(card => card.classList.remove('selected'));
+  const tableCard = document.getElementById('tableInfoCard'); if (tableCard) tableCard.style.display = 'none';
+  const custCard = document.getElementById('customerInfoCard'); if (custCard) custCard.style.display = 'none';
+
+  alert('✅ Đã đăng xuất thành công!');
+  showPage('home'); // Chuyển về trang chủ
+
+  // 🌟 SỬA LỖI 404: Loại bỏ dòng window.location.href = '/login.html';
+  // Thay vào đó, chuyển thẳng về trang gốc nếu bạn muốn tải lại:
+  window.location.href = '/'; 
+  
+  // Hoặc chỉ chuyển về tab login trên trang hiện tại nếu là SPA:
+  // const loginTab = document.getElementById('login-tab');
+  // if (loginTab) { new bootstrap.Tab(loginTab).show(); } 
+}
+// ===========================================
+
+// ---------------------------
+// Add to order / update summary
+// ---------------------------
 function addToOrder(btn) {
   const input = btn.previousElementSibling;
   const quantity = parseInt(input.value);
-  if (quantity <= 0) {
-    alert('Vui lòng nhập số lượng!');
-    return;
-  }
+  if (quantity <= 0) { alert('Vui lòng nhập số lượng!'); return; }
 
   const id = parseInt(input.dataset.id);
   const name = input.dataset.name;
   const price = parseInt(input.dataset.price);
-  
-  const existingItem = currentOrder.find(o => o.foodId === id);
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    currentOrder.push({ foodId: id, name, price, quantity });
-  }
+
+  const existing = currentOrder.find(o => o.foodId === id);
+  if (existing) existing.quantity += quantity;
+  else currentOrder.push({ foodId: id, name, price, quantity });
 
   updateOrderSummary();
   alert(`✅ Đã thêm ${quantity} x ${name}`);
@@ -303,7 +475,6 @@ function updateOrderSummary() {
   const orderList = document.getElementById('orderList');
   let html = '';
   let subtotal = 0;
-
   if (currentOrder.length === 0) {
     html = '<p class="text-muted text-center">Chưa có món nào</p>';
   } else {
@@ -325,14 +496,12 @@ function updateOrderSummary() {
     });
   }
 
-  orderList.innerHTML = html;
-  document.getElementById('subtotalAmount').textContent = subtotal.toLocaleString() + ' VND';
-  
+  if (orderList) orderList.innerHTML = html;
+  const subtotalEl = document.getElementById('subtotalAmount'); if (subtotalEl) subtotalEl.textContent = subtotal.toLocaleString() + ' VND';
   const discount = Math.floor(subtotal * discountApplied / 100);
   const total = subtotal - discount;
-  
-  document.getElementById('discountAmount').textContent = '-' + discount.toLocaleString() + ' VND';
-  document.getElementById('totalAmount').textContent = total.toLocaleString() + ' VND';
+  const discountEl = document.getElementById('discountAmount'); if (discountEl) discountEl.textContent = '-' + discount.toLocaleString() + ' VND';
+  const totalEl = document.getElementById('totalAmount'); if (totalEl) totalEl.textContent = total.toLocaleString() + ' VND';
 }
 
 function removeFromOrder(id) {
@@ -340,270 +509,288 @@ function removeFromOrder(id) {
   updateOrderSummary();
 }
 
+// ---------------------------
+// Apply discount
+// ---------------------------
 function applyDiscount() {
   const code = document.getElementById('discountCode').value.trim().toUpperCase();
   const message = document.getElementById('discountMessage');
-  
-  if (!code) {
-    message.textContent = '';
-    return;
-  }
-  
+  if (!code) { if (message) message.textContent = ''; return; }
+
   if (code === 'DISCOUNT10') {
-    discountApplied = 10;
-    discountCode = code;
-    message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`;
-    message.className = 'text-success';
+    discountApplied = 10; discountCode = code;
+    if (message) { message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`; message.className = 'text-success'; }
     updateOrderSummary();
   } else if (code === 'DISCOUNT20') {
-    discountApplied = 20;
-    discountCode = code;
-    message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`;
-    message.className = 'text-success';
+    discountApplied = 20; discountCode = code;
+    if (message) { message.textContent = `✅ Áp dụng mã giảm ${discountApplied}% thành công!`; message.className = 'text-success'; }
     updateOrderSummary();
   } else {
-    message.textContent = '❌ Mã giảm giá không hợp lệ!';
-    message.className = 'text-danger';
-    discountApplied = 0;
-    discountCode = '';
+    if (message) { message.textContent = '❌ Mã giảm giá không hợp lệ!'; message.className = 'text-danger'; }
+    discountApplied = 0; discountCode = '';
     updateOrderSummary();
   }
 }
 
+// ---------------------------
+// Review / proceed to payment
+// ---------------------------
 function reviewOrder() {
-  if (currentOrder.length === 0) {
-    alert('Vui lòng chọn món trước!');
-    return;
-  }
+  if (currentOrder.length === 0) { alert('Vui lòng chọn món trước!'); return; }
+  if (!orderType) { alert('Vui lòng chọn loại đơn hàng (Ăn tại chỗ hoặc Mang về)!'); return; }
 
-  if (!orderType) {
-    alert('Vui lòng chọn loại đơn hàng (Ăn tại chỗ hoặc Mang về)!');
-    return;
+  // Clear existing pending takeaway before starting a new one
+  if (localStorage.getItem(PENDING_TAKEAWAY_KEY) && orderType === 'takeaway') {
+    if (!confirm('⚠️ Đang có đơn hàng mang về chờ thanh toán. Bạn có muốn hủy đơn cũ và tạo đơn mới không?')) {
+        return;
+    }
+    clearPendingTakeaway();
   }
 
   if (orderType === 'dine-in') {
     const tableId = document.getElementById('tableId').value;
     const guestCount = document.getElementById('guestCount').value;
-    
-    if (!tableId || !guestCount) {
-      alert('Vui lòng điền đầy đủ thông tin đặt bàn!');
-      return;
-    }
-
-    // Kiểm tra bàn đã có người chưa
-    if (occupiedTables.has(parseInt(tableId))) {
-      alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`);
-      return;
-    }
-
-    document.getElementById('reviewTableInfo').innerHTML = `
-      <p><strong>Loại:</strong> Ăn tại chỗ</p>
-      <p><strong>Bàn số:</strong> ${tableId}</p>
-      <p><strong>Số khách:</strong> ${guestCount} người</p>
-    `;
+    if (!tableId || !guestCount) { alert('Vui lòng điền đầy đủ thông tin đặt bàn!'); return; }
+    if (occupiedTables.has(parseInt(tableId))) { alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`); return; }
+    document.getElementById('reviewTableInfo').innerHTML = `<p><strong>Loại:</strong> Ăn tại chỗ</p><p><strong>Bàn số:</strong> ${tableId}</p><p><strong>Số khách:</strong> ${guestCount} người</p>`;
   } else {
     const name = document.getElementById('customerName').value;
     const phone = document.getElementById('customerPhone').value;
-    
-    if (!name || !phone) {
-      alert('Vui lòng điền đầy đủ thông tin khách hàng!');
-      return;
-    }
-
-    document.getElementById('reviewTableInfo').innerHTML = `
-      <p><strong>Loại:</strong> Mang về</p>
-      <p><strong>Khách hàng:</strong> ${name}</p>
-      <p><strong>SĐT:</strong> ${phone}</p>
-    `;
+    if (!name || !phone) { alert('Vui lòng điền đầy đủ thông tin khách hàng!'); return; }
+    document.getElementById('reviewTableInfo').innerHTML = `<p><strong>Loại:</strong> Mang về</p><p><strong>Khách hàng:</strong> ${name}</p><p><strong>SĐT:</strong> ${phone}</p>`;
   }
 
-  let html = '';
-  let subtotal = 0;
-  
+  let html = ''; let subtotal = 0;
   currentOrder.forEach(order => {
-    const itemTotal = order.price * order.quantity;
-    subtotal += itemTotal;
-    html += `
-      <div class="d-flex justify-content-between mb-2">
-        <span>${order.quantity} x ${order.name}</span>
-        <span>${itemTotal.toLocaleString()} VND</span>
-      </div>
-    `;
+    const itemTotal = order.price * order.quantity; subtotal += itemTotal;
+    html += `<div class="d-flex justify-content-between mb-2"><span>${order.quantity} x ${order.name}</span><span>${itemTotal.toLocaleString()} VND</span></div>`;
   });
 
   document.getElementById('reviewOrderList').innerHTML = html;
-  
   const discount = Math.floor(subtotal * discountApplied / 100);
   const total = subtotal - discount;
-  
   document.getElementById('reviewSubtotal').textContent = subtotal.toLocaleString() + ' VND';
   document.getElementById('reviewDiscount').textContent = '-' + discount.toLocaleString() + ' VND';
   document.getElementById('reviewTotal').textContent = total.toLocaleString() + ' VND';
-  
   showPage('review');
 }
 
+// Cập nhật hàm proceedToPayment()
 async function proceedToPayment() {
-  if (orderType === 'dine-in') {
-    await addToPendingOrders();
-  } else {
-    await createOrderAndPay();
+  // 1. Kiểm tra xem có đang xử lý không
+  if (isProcessingPayment) {
+    console.warn("Payment already in progress. Ignoring click.");
+    return;
+  }
+
+  // 2. Đặt cờ
+  isProcessingPayment = true;
+
+  try {
+    if (orderType === 'dine-in') {
+      await addToPendingOrders();
+    } else {
+      await createOrderAndPay();
+    }
+  } catch (err) {
+    // Bắt lỗi nếu 1 trong 2 hàm trên thất bại (dù chúng đã có catch riêng)
+    console.error("Error in proceedToPayment:", err);
+    alert("Đã xảy ra lỗi, vui lòng thử lại.");
+  } finally {
+    // 3. Luôn luôn nhả cờ sau khi hoàn tất (kể cả khi lỗi)
+    isProcessingPayment = false;
   }
 }
 
+// ---------------------------
+// Add dine-in to pending (and persist for current user)
+// ---------------------------
 async function addToPendingOrders() {
   const tableId = parseInt(document.getElementById('tableId').value);
   const guestCount = parseInt(document.getElementById('guestCount').value);
-  
-  // Kiểm tra lại bàn trước khi thêm vào pending
-  if (occupiedTables.has(tableId)) {
-    alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`);
-    return;
+
+  if (occupiedTables.has(tableId)) { 
+    alert(`❌ Bàn ${tableId} đang có khách! Vui lòng chọn bàn khác.`); 
+    return; 
   }
   
-  const now = new Date();
-  const orderId = Math.floor(Math.random() * 1000000);
-  
-  let subtotal = 0;
-  currentOrder.forEach(order => {
-    subtotal += order.price * order.quantity;
-  });
-  
-  const discount = Math.floor(subtotal * discountApplied / 100);
-  const total = subtotal - discount;
-  
-  const pendingOrder = {
-    orderId: orderId,
-    type: 'dine-in',
-    tableId: tableId,
-    guestCount: guestCount,
-    items: [...currentOrder],
-    subtotal: subtotal,
-    discount: discount,
-    discountPercent: discountApplied,
-    discountCode: discountCode,
-    total: total,
-    date: now.toLocaleDateString('vi-VN'),
-    time: now.toLocaleTimeString('vi-VN'),
-    status: 'Chờ thanh toán'
-  };
-  
-  pendingOrders.push(pendingOrder);
-  
-  // Đánh dấu bàn đã có người
-  occupiedTables.add(tableId);
-  
-  alert(`✅ Đã thêm đơn hàng bàn ${tableId} vào danh sách chờ thanh toán!`);
-  
-  currentOrder = [];
-  discountApplied = 0;
-  discountCode = '';
-  orderType = null;
-  document.getElementById('discountCode').value = '';
-  document.getElementById('discountMessage').textContent = '';
-  document.querySelectorAll('.order-type-card').forEach(card => {
-    card.classList.remove('selected');
-  });
-  document.getElementById('tableInfoCard').style.display = 'none';
-  
-  updateOrderSummary();
-  showPage('pending');
-}
+  if (currentOrder.length === 0) {
+    console.warn("Attempted to add empty order to pending.");
+    return;
+  }
 
-async function createOrderAndPay() {
-  const name = document.getElementById('customerName').value;
-  const phone = document.getElementById('customerPhone').value;
-  
   try {
-    const items = currentOrder.map(item => ({
-      foodId: item.foodId,
-      quantity: item.quantity
-    }));
-
-    const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        items: items,
-        discountCode: discountCode || null
-      })
-    });
-
-    if (!orderResponse.ok) {
-      throw new Error('Failed to create order');
+    // ===== TẠO ĐƠN HÀNG TRONG DATABASE NGAY =====
+    const items = currentOrder.map(item => ({ foodId: item.foodId, quantity: item.quantity }));
+    const orderData = { items };
+    
+    // Thêm username nếu đã đăng nhập
+    if (currentUser && currentUser.username) {
+      orderData.username = currentUser.username;
     }
 
-    const orderData = await orderResponse.json();
-    createdOrderId = orderData.orderId;
-    
-    document.getElementById('paymentTotal').textContent = orderData.total.toLocaleString() + ' VND';
-    document.getElementById('displayOrderId').textContent = '#' + orderData.orderId;
-    
-    alert(`✅ Đã tạo đơn mang về cho khách hàng ${name}`);
-    showPage('payment');
-    
-  } catch (error) {
-    console.error('Order Creation Error:', error);
+    const res = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify(orderData)
+    });
+
+    if (!res.ok) throw new Error('Failed to create order');
+    const orderResp = await res.json();
+    const serverOrderId = orderResp.orderId; // ID từ database
+    // ============================================
+
+    const now = new Date();
+    let subtotal = 0;
+    currentOrder.forEach(order => subtotal += order.price * order.quantity);
+    const discount = Math.floor(subtotal * discountApplied / 100);
+    const total = subtotal - discount;
+
+    const pendingOrder = {
+      orderId: serverOrderId, // Dùng ID từ server
+      type: 'dine-in',
+      tableId,
+      guestCount,
+      items: [...currentOrder],
+      subtotal,
+      discount,
+      discountPercent: discountApplied,
+      discountCode,
+      total,
+      date: now.toLocaleDateString('vi-VN'),
+      time: now.toLocaleTimeString('vi-VN'),
+      status: 'Chờ thanh toán'
+    };
+
+    // Thêm vào đầu danh sách (unshift) thay vì cuối (push)
+    pendingOrders.unshift(pendingOrder);
+    occupiedTables.add(tableId);
+
+    // Persist pending for current user (or guest)
+    savePendingForCurrentUser();
+
+    alert(`✅ Đã tạo đơn hàng #${serverOrderId} cho bàn ${tableId}!`);
+    currentOrder = []; // Clear state
+    discountApplied = 0; 
+    discountCode = '';
+    orderType = null;
+    document.getElementById('discountCode').value = '';
+    document.getElementById('discountMessage').textContent = '';
+    document.querySelectorAll('.order-type-card').forEach(card => card.classList.remove('selected'));
+    document.getElementById('tableInfoCard').style.display = 'none';
+    updateOrderSummary();
+    showPage('pending');
+
+  } catch (err) {
+    console.error('Error creating dine-in order:', err);
     alert('❌ Không thể tạo đơn hàng. Vui lòng thử lại.');
   }
 }
 
+// ---------------------------
+// Create order and go to payment (takeaway)
+// ---------------------------
+async function createOrderAndPay() {
+  if (currentOrder.length === 0) {
+    console.warn("Attempted to create empty takeaway order.");
+    return;
+  }
+
+  const name = document.getElementById('customerName').value;
+  const phone = document.getElementById('customerPhone').value;
+
+  try {
+    const items = currentOrder.map(item => ({ foodId: item.foodId, quantity: item.quantity }));
+    const orderData = { items, discountCode: discountCode || null };
+
+    if (currentUser && currentUser.username) orderData.username = currentUser.username;
+
+    const res = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData)
+    });
+
+    if (!res.ok) throw new Error('Failed to create order');
+    const orderResp = await res.json();
+    createdOrderId = orderResp.orderId;
+
+    // Calculate and SAVE payment context to localStorage for recovery
+    let subtotal = 0;
+    currentOrder.forEach(order => subtotal += order.price * order.quantity);
+    const discount = Math.floor(subtotal * discountApplied / 100);
+    const totalAmount = subtotal - discount;
+
+    savePendingTakeaway(
+        createdOrderId,
+        totalAmount,
+        currentOrder, 
+        discountApplied,
+        discountCode,
+        name,
+        phone
+    );
+    // --------------------------------------------------------------------------
+
+    document.getElementById('paymentTotal').textContent = orderResp.total.toLocaleString() + ' VND';
+    document.getElementById('displayOrderId').textContent = '#' + orderResp.orderId;
+
+    alert(`✅ Đã tạo đơn mang về cho khách hàng ${name}`);
+    showPage('payment');
+
+    // Clear current order state (It's now persisted in localStorage)
+    currentOrder = [];
+    discountApplied = 0;
+    discountCode = '';
+    updateOrderSummary();
+    // --------------------------------------------------------------------------
+
+  } catch (err) {
+    console.error('Order Creation Error:', err);
+    alert('❌ Không thể tạo đơn hàng. Vui lòng thử lại.');
+    clearPendingTakeaway(); // Clear if creation failed
+  }
+}
+
+// ---------------------------
+// Pay pending or current created order
+// ---------------------------
 function payPendingOrder(orderId) {
+  createdOrderId = orderId;
   const order = pendingOrders.find(o => o.orderId === orderId);
   if (!order) return;
-  
-  createdOrderId = order.orderId;
   document.getElementById('paymentTotal').textContent = order.total.toLocaleString() + ' VND';
   document.getElementById('displayOrderId').textContent = '#' + order.orderId;
-  
   showPage('payment');
 }
 
 function selectPayment(method) {
-  document.getElementById('qrCodeSection').style.display = 'none';
-  document.getElementById('cardPaymentSection').style.display = 'none';
-  
+  const qr = document.getElementById('qrCodeSection'); if (qr) qr.style.display = 'none';
+  const cardSec = document.getElementById('cardPaymentSection'); if (cardSec) cardSec.style.display = 'none';
   document.querySelectorAll('.payment-method').forEach(m => m.classList.remove('selected'));
-  
-  document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+  const target = document.querySelector(`[data-method="${method}"]`); if (target) target.classList.add('selected');
   selectedPaymentMethod = method;
-  
-  if (method === 'qr') {
-    showQRCode();
-  } else if (method === 'card') {
-    document.getElementById('cardPaymentSection').style.display = 'block';
-  }
+  if (method === 'qr') showQRCode();
+  else if (method === 'card') { if (cardSec) cardSec.style.display = 'block'; }
 }
 
 function showQRCode() {
-  const qrSection = document.getElementById('qrCodeSection');
-  qrSection.style.display = 'block';
-  
+  const qrSection = document.getElementById('qrCodeSection'); if (qrSection) qrSection.style.display = 'block';
   const orderId = createdOrderId || Math.floor(Math.random() * 10000);
-  const total = document.getElementById('paymentTotal').textContent;
+  const total = document.getElementById('paymentTotal').textContent || '';
   const content = `NH VIET ${orderId} ${total}`;
-  
-  document.getElementById('qrContent').textContent = content;
-  
-  const qrContainer = document.getElementById('qrcode');
-  qrContainer.innerHTML = '';
-  
-  new QRCode(qrContainer, {
-    text: content,
-    width: 200,
-    height: 200,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.H
-  });
+  const qrContent = document.getElementById('qrContent'); if (qrContent) qrContent.textContent = content;
+  const qrContainer = document.getElementById('qrcode'); if (qrContainer) qrContainer.innerHTML = '';
+  // Giả định thư viện QRCode đã được tải
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(qrContainer, { text: content, width: 200, height: 200, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H });
+  } else {
+    qrContainer.textContent = "Lỗi: Thư viện QRCode chưa được tải.";
+  }
 }
 
 async function completePayment() {
-  if (!selectedPaymentMethod) {
-    alert('Vui lòng chọn phương thức thanh toán!');
-    return;
+  if (!selectedPaymentMethod) { 
+    alert('Vui lòng chọn phương thức thanh toán!'); 
+    return; 
   }
 
   if (selectedPaymentMethod === 'card') {
@@ -612,144 +799,132 @@ async function completePayment() {
     const cardExpiry = document.getElementById('cardExpiry').value;
     const cardCVV = document.getElementById('cardCVV').value;
     const cardName = document.getElementById('cardName').value;
-    
-    if (!bank || !cardNumber || !cardExpiry || !cardCVV || !cardName) {
-      alert('Vui lòng điền đầy đủ thông tin thẻ!');
-      return;
+    if (!bank || !cardNumber || !cardExpiry || !cardCVV || !cardName) { 
+      alert('Vui lòng điền đầy đủ thông tin thẻ!'); 
+      return; 
     }
   }
 
-  const methods = {
-    'cash': 'Tiền mặt',
-    'qr': 'QR Code',
-    'card': 'Thẻ tín dụng'
-  };
+  const methods = { 'cash': 'Tiền mặt', 'qr': 'QR Code', 'card': 'Thẻ tín dụng' };
 
   try {
     const pendingOrder = pendingOrders.find(o => o.orderId === createdOrderId);
-    
     let totalAmount;
-    let orderData;
-    
+
     if (pendingOrder) {
+      // ===== THANH TOÁN ĐƠN ĂN TẠI CHỖ =====
       totalAmount = pendingOrder.total;
-      orderData = {
-        orderId: pendingOrder.orderId,
-        type: pendingOrder.type,
-        tableId: pendingOrder.tableId,
-        guestCount: pendingOrder.guestCount,
-        items: pendingOrder.items,
-        subtotal: pendingOrder.subtotal,
-        discount: pendingOrder.discount,
-        discountPercent: pendingOrder.discountPercent,
-        discountCode: pendingOrder.discountCode,
-        total: pendingOrder.total,
-        paymentMethod: methods[selectedPaymentMethod],
-        date: new Date().toLocaleDateString('vi-VN'),
-        time: new Date().toLocaleTimeString('vi-VN'),
-        status: 'Đã thanh toán'
-      };
-      
-      // Giải phóng bàn khi thanh toán xong
-      occupiedTables.delete(pendingOrder.tableId);
-      
-      pendingOrders = pendingOrders.filter(o => o.orderId !== createdOrderId);
-    } else {
-      let subtotal = 0;
-      currentOrder.forEach(order => {
-        subtotal += order.price * order.quantity;
+
+      // Cập nhật status đơn hàng trong database
+      const updateRes = await fetch(`${API_BASE_URL}/orders/${createdOrderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Đã thanh toán' })
       });
-      const discount = Math.floor(subtotal * discountApplied / 100);
-      totalAmount = subtotal - discount;
-      
-      const name = document.getElementById('customerName').value;
-      const phone = document.getElementById('customerPhone').value;
-      
-      orderData = {
-        orderId: createdOrderId,
-        type: 'takeaway',
-        customerName: name,
-        customerPhone: phone,
-        items: [...currentOrder],
-        subtotal: subtotal,
-        discount: discount,
-        discountPercent: discountApplied,
-        discountCode: discountCode,
-        total: totalAmount,
-        paymentMethod: methods[selectedPaymentMethod],
-        date: new Date().toLocaleDateString('vi-VN'),
-        time: new Date().toLocaleTimeString('vi-VN'),
-        status: 'Đã thanh toán'
-      };
-    }
 
-    const response = await fetch(`${API_BASE_URL}/payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        orderId: createdOrderId,
-        paymentMethod: methods[selectedPaymentMethod],
-        totalAmount: totalAmount
-      })
-    });
+      if (!updateRes.ok) {
+        throw new Error('Không thể cập nhật trạng thái đơn hàng');
+      }
 
-    if (!response.ok) {
-      const error = await response.text();
-      alert('❌ ' + error);
-      return;
-    }
+      // Gửi thông tin thanh toán
+      const payRes = await fetch(`${API_BASE_URL}/payment`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          orderId: createdOrderId, 
+          paymentMethod: methods[selectedPaymentMethod], 
+          totalAmount 
+        }) 
+      });
 
-    const message = await response.text();
-    
-    orderHistory.unshift(orderData);
-    
-    if (orderData.type === 'dine-in') {
-      alert(`✅ ${message}\n🎉 Bàn ${orderData.tableId} đã trống!`);
+      if (!payRes.ok) { 
+        const txt = await payRes.text(); 
+        alert('❌ ' + txt); 
+        return; 
+      }
+
+      const message = await payRes.text();
+
+      // Free table và remove from pending
+      occupiedTables.delete(pendingOrder.tableId);
+      pendingOrders = pendingOrders.filter(o => o.orderId !== createdOrderId);
+      savePendingForCurrentUser();
+
+      alert(`✅ ${message}\n🎉 Bàn ${pendingOrder.tableId} đã trống!`);
+
     } else {
+      // ===== THANH TOÁN ĐƠN MANG VỀ =====
+      // Lấy tổng tiền từ giao diện (hoặc từ localStorage nếu khôi phục)
+      const totalText = document.getElementById('paymentTotal').textContent.replace(/[^\d]/g, '');
+      totalAmount = parseInt(totalText) || 0;
+
+      // Cập nhật status
+      const updateRes = await fetch(`${API_BASE_URL}/orders/${createdOrderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Đã thanh toán' })
+      });
+
+      if (!updateRes.ok) {
+        throw new Error('Không thể cập nhật trạng thái đơn hàng');
+      }
+
+      // Gửi thông tin thanh toán
+      const payRes = await fetch(`${API_BASE_URL}/payment`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          orderId: createdOrderId, 
+          paymentMethod: methods[selectedPaymentMethod], 
+          totalAmount 
+        }) 
+      });
+
+      if (!payRes.ok) { 
+        const txt = await payRes.text(); 
+        alert('❌ ' + txt); 
+        return; 
+      }
+
+      const message = await payRes.text();
       alert('✅ ' + message);
+      
+      // Clear persistent takeaway state on success
+      clearPendingTakeaway();
     }
-    
+
+    // Clear local state
     currentOrder = [];
     selectedPaymentMethod = null;
-    discountApplied = 0;
+    discountApplied = 0; 
     discountCode = '';
-    createdOrderId = null;
+    createdOrderId = null; 
     orderType = null;
     document.getElementById('discountCode').value = '';
     document.getElementById('discountMessage').textContent = '';
-    document.querySelectorAll('.order-type-card').forEach(card => {
-      card.classList.remove('selected');
-    });
+    document.querySelectorAll('.order-type-card').forEach(card => card.classList.remove('selected'));
     document.getElementById('tableInfoCard').style.display = 'none';
     document.getElementById('customerInfoCard').style.display = 'none';
-    
     updateOrderSummary();
     showPage('home');
-    
-  } catch (error) {
-    console.error('Payment Error:', error);
+
+  } catch (err) {
+    console.error('Payment Error:', err);
     alert('❌ Không thể xử lý thanh toán. Vui lòng thử lại.');
   }
 }
-
+// ---------------------------
+// Pending list display
+// ---------------------------
 function displayPendingOrders() {
   const pendingList = document.getElementById('pendingList');
-  
   if (!pendingOrders || pendingOrders.length === 0) {
-    pendingList.innerHTML = `
-      <div class="text-center p-5">
-        <div style="font-size: 4rem; margin-bottom: 20px;">🕐</div>
-        <h4>Chưa có đơn hàng chờ thanh toán</h4>
-        <p class="text-muted">Các đơn ăn tại chỗ sẽ được lưu ở đây cho đến khi thanh toán</p>
-        <button class="btn btn-primary mt-3" onclick="showPage('order')">Tạo đơn hàng mới</button>
-      </div>
-    `;
+    pendingList.innerHTML = `<div class="text-center p-5"><div style="font-size: 4rem; margin-bottom: 20px;">🕐</div><h4>Chưa có đơn hàng chờ thanh toán</h4><p class="text-muted">Các đơn **ăn tại chỗ** đang chờ xử lý sẽ được lưu ở đây cho đến khi thanh toán.</p><button class="btn btn-primary mt-3" onclick="showPage('order')">Tạo đơn hàng mới</button></div>`;
     return;
   }
-  
+
   let html = '';
+  // Note: pendingOrders đã được unshift (thêm vào đầu) nên không cần sort ở đây
   pendingOrders.forEach(order => {
     html += `
       <div class="pending-card" onclick="payPendingOrder(${order.orderId})">
@@ -760,132 +935,283 @@ function displayPendingOrders() {
           </div>
           <span class="badge bg-warning text-dark">${order.status}</span>
         </div>
-        
+        <div class="mb-3"><span class="badge bg-secondary">${order.guestCount} khách</span></div>
         <div class="mb-3">
-          <span class="badge bg-secondary">${order.guestCount} khách</span>
+          ${order.items.map(item => `<div class="d-flex justify-content-between"><span>${item.quantity} x ${item.name}</span><span>${(item.price * item.quantity).toLocaleString()} VND</span></div>`).join('')}
         </div>
-        
-        <div class="mb-3">
-          ${order.items.map(item => `
-            <div class="d-flex justify-content-between">
-              <span>${item.quantity} x ${item.name}</span>
-              <span>${(item.price * item.quantity).toLocaleString()} VND</span>
-            </div>
-          `).join('')}
-        </div>
-        
-        ${order.discount > 0 ? `
-          <div class="d-flex justify-content-between text-success mb-2">
-            <span>Giảm giá (${order.discountPercent}%)</span>
-            <span>-${order.discount.toLocaleString()} VND</span>
-          </div>
-        ` : ''}
-        
+        ${order.discount > 0 ? `<div class="d-flex justify-content-between text-success mb-2"><span>Giảm giá (${order.discountPercent}%)</span><span>-${order.discount.toLocaleString()} VND</span></div>` : ''}
         <hr>
-        <div class="d-flex justify-content-between">
-          <strong>Tổng thanh toán</strong>
-          <strong class="text-primary fs-5">${order.total.toLocaleString()} VND</strong>
-        </div>
-        
-        <button class="btn btn-success w-100 mt-3" onclick="event.stopPropagation(); payPendingOrder(${order.orderId})">
-          Thanh toán ngay →
-        </button>
+        <div class="d-flex justify-content-between"><strong>Tổng thanh toán</strong><strong class="text-primary fs-5">${order.total.toLocaleString()} VND</strong></div>
+        <button class="btn btn-success w-100 mt-3" onclick="event.stopPropagation(); payPendingOrder(${order.orderId})">Thanh toán ngay →</button>
       </div>
     `;
   });
-  
+
   pendingList.innerHTML = html;
 }
 
-function displayOrderHistory() {
+// ---------------------------
+// History display (user from server, guest from localStorage)
+// ---------------------------
+async function displayOrderHistory() {
   const historyList = document.getElementById('historyList');
-  
-  if (!orderHistory || orderHistory.length === 0) {
-    historyList.innerHTML = `
-      <div class="text-center p-5">
-        <div style="font-size: 4rem; margin-bottom: 20px;">📋</div>
-        <h4>Chưa có đơn hàng nào</h4>
-        <p class="text-muted">Hãy đặt món và thanh toán để xem lịch sử đơn hàng</p>
-        <button class="btn btn-primary mt-3" onclick="showPage('order')">Đặt hàng ngay</button>
-      </div>
-    `;
-    return;
+
+  if (currentUser && currentUser.username) {
+    historyList.innerHTML = '<div class="text-center p-3"><div class="spinner-border"></div><p>Đang tải lịch sử...</p></div>';
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders/history/${currentUser.username}`);
+      if (!res.ok) { showEmptyHistory(historyList); return; }
+      const serverOrders = await res.json();
+      if (!serverOrders || serverOrders.length === 0) { showEmptyHistory(historyList); return; }
+      displayServerOrders(historyList, serverOrders);
+      return;
+    } catch (err) {
+      console.error('Error loading order history:', err);
+      historyList.innerHTML = `<div class="text-center p-5"><div style="font-size: 3rem;">❌</div><h4>Không thể tải lịch sử đơn hàng</h4><p class="text-muted">Vui lòng kiểm tra kết nối server</p></div>`;
+      return;
+    }
   }
+
+  // Guest history
+  const guestHistory = localStorage.getItem('guestOrderHistory');
+  orderHistory = guestHistory ? JSON.parse(guestHistory) : [];
+  if (!orderHistory || orderHistory.length === 0) { showEmptyHistory(historyList); return; }
+  displayLocalOrders(historyList);
+}
+
+function showEmptyHistory(historyList) {
+  const message = currentUser ? 'Bạn chưa có đơn hàng nào' : 'Chưa có đơn hàng nào (Đăng nhập để lưu lịch sử vĩnh viễn)';
+  historyList.innerHTML = `<div class="text-center p-5"><div style="font-size: 4rem; margin-bottom: 20px;">📋</div><h4>${message}</h4><p class="text-muted">Hãy đặt món và thanh toán để xem lịch sử đơn hàng</p>${!currentUser ? '<p class="text-warning">⚠️ Lưu ý: Lịch sử guest sẽ bị xóa khi đóng trình duyệt</p>' : ''}<button class="btn btn-primary mt-3" onclick="showPage('order')">Đặt hàng ngay</button></div>`;
+}
+
+// Sắp xếp Lịch sử Server (mới nhất lên đầu) VÀ CẬP NHẬT MÀU BADGE HỦY
+function displayServerOrders(historyList, serverOrders) {
+  let html = '<div class="alert alert-info mb-3">✅ Lịch sử đơn hàng của bạn (đã đăng nhập)</div>';
   
-  let html = '';
-  orderHistory.forEach(order => {
-    const isTableOrder = order.type === 'dine-in';
-    html += `
-      <div class="history-card">
-        <div class="d-flex justify-content-between mb-3">
-          <div>
-            <h5 class="text-primary">#${order.orderId}</h5>
-            <small class="text-muted">${order.date} ${order.time}</small>
-          </div>
-          <span class="badge bg-success">${order.status}</span>
+  // Sắp xếp theo orderId giảm dần (mới nhất trước)
+  serverOrders.sort((a, b) => b.orderId - a.orderId);
+
+  serverOrders.forEach(order => {
+    // Thêm kiểm tra trạng thái để hiển thị cảnh báo
+    const isPending = order.status === 'Đang xử lý' || order.status === 'Chờ thanh toán';
+    const isCancelled = order.status === 'Đã Hủy'; // Kiểm tra trạng thái hủy
+
+    // Chọn màu badge
+    let statusBadge;
+    if (isCancelled) {
+        statusBadge = `<span class="badge bg-danger">Đã Hủy</span>`; // Màu đỏ cho Đã Hủy
+    } else if (isPending) {
+        statusBadge = `<span class="badge bg-warning text-dark">${order.status || 'Đang xử lý'}</span>`;
+    } else {
+        statusBadge = `<span class="badge bg-success">${order.status}</span>`; // Màu xanh cho Đã thanh toán
+    }
+
+    const pendingNote = isPending ? '<p class="text-danger small mt-2">⚠️ Đơn này chưa hoàn tất. Vui lòng kiểm tra tab **Chờ Thanh Toán** (nếu là đơn ăn tại chỗ).</p>' : '';
+    
+    html += `<div class="history-card">
+      <div class="d-flex justify-content-between mb-3">
+        <div>
+          <h5 class="text-primary">#${order.orderId}</h5>
+          <small class="text-muted">${order.formattedOrderDate || new Date(order.orderDate).toLocaleString('vi-VN')}</small>
         </div>
-        
-        <div class="mb-3">
-          ${isTableOrder ? `
-            <span class="badge bg-secondary">🍽️ Ăn tại chỗ</span>
-            <span class="badge bg-secondary ms-2">Bàn ${order.tableId}</span>
-            <span class="badge bg-secondary ms-2">${order.guestCount} khách</span>
-          ` : `
-            <span class="badge bg-secondary">🥡 Mang về</span>
-            <span class="badge bg-secondary ms-2">${order.customerName}</span>
-            <span class="badge bg-secondary ms-2">${order.customerPhone}</span>
-          `}
-          <span class="badge bg-info ms-2">${order.paymentMethod}</span>
-        </div>
-        
-        <div class="mb-3">
-          ${order.items.map(item => `
-            <div class="d-flex justify-content-between">
-              <span>${item.quantity} x ${item.name}</span>
-              <span>${(item.price * item.quantity).toLocaleString()} VND</span>
-            </div>
-          `).join('')}
-        </div>
-        
-        ${order.discount > 0 ? `
-          <div class="d-flex justify-content-between text-success mb-2">
-            <span>Giảm giá (${order.discountPercent}%)</span>
-            <span>-${order.discount.toLocaleString()} VND</span>
-          </div>
-        ` : ''}
-        
-        <div class="d-flex justify-content-between">
-          <strong>Tổng thanh toán</strong>
-          <strong class="text-primary">${order.total.toLocaleString()} VND</strong>
-        </div>
+        ${statusBadge}
       </div>
-    `;
+      <div class="mb-3">
+        ${order.orderDetails.map(detail => `<div class="d-flex justify-content-between"><span>${detail.quantity} x ${detail.food.name}</span><span>${(detail.food.price * detail.quantity).toLocaleString()} VND</span></div>`).join('')}
+      </div>
+      <hr>
+      <div class="d-flex justify-content-between"><strong>Tổng thanh toán</strong><strong class="text-primary">${order.total.toLocaleString()} VND</strong></div>
+      ${pendingNote}
+    </div>`;
   });
   
+  html += `<div class="mt-3"><button class="btn btn-danger" onclick="clearOrderHistory()">🗑 Xóa toàn bộ lịch sử</button></div>`;
   historyList.innerHTML = html;
 }
 
+// Sắp xếp Lịch sử Local/Guest (mới nhất lên đầu)
+function displayLocalOrders(historyList) {
+  let html = '<div class="alert alert-warning mb-3">⚠️ Lịch sử tạm thời (chưa đăng nhập) - Sẽ bị xóa khi thoát</div>';
+
+  // Sắp xếp bằng cách đảo ngược mảng (giả định đơn mới được push vào cuối)
+  const sortedHistory = [...orderHistory].reverse();
+
+  sortedHistory.forEach(order => {
+    const isTableOrder = order.type === 'dine-in';
+    // Đơn local thường chỉ có 2 trạng thái: 'Đã thanh toán' (thành công) hoặc 'Đã Hủy' (nếu có logic hủy)
+    const isCancelled = order.status === 'Đã Hủy'; 
+    const statusBadge = isCancelled ? 
+        `<span class="badge bg-danger">Đã Hủy</span>` : 
+        `<span class="badge bg-success">${order.status || 'Đã thanh toán'}</span>`;
+        
+    html += `<div class="history-card"><div class="d-flex justify-content-between mb-3"><div><h5 class="text-primary">#${order.orderId}</h5><small class="text-muted">${order.date} ${order.time}</small></div>${statusBadge}</div><div class="mb-3">${isTableOrder ? `<span class="badge bg-secondary">🍽️ Ăn tại chỗ</span><span class="badge bg-secondary ms-2">Bàn ${order.tableId}</span><span class="badge bg-secondary ms-2">${order.guestCount} khách</span>` : `<span class="badge bg-secondary">🥡 Mang về</span><span class="badge bg-secondary ms-2">${order.customerName || ''}</span><span class="badge bg-secondary ms-2">${order.customerPhone || ''}</span>`}<span class="badge bg-info ms-2">${order.paymentMethod || ''}</span></div><div class="mb-3">${order.items.map(item => `<div class="d-flex justify-content-between"><span>${item.quantity} x ${item.name}</span><span>${(item.price * item.quantity).toLocaleString()} VND</span></div>`).join('')}</div>${order.discount > 0 ? `<div class="d-flex justify-content-between text-success mb-2"><span>Giảm giá (${order.discountPercent}%)</span><span>-${order.discount.toLocaleString()} VND</span></div>` : ''}<hr><div class="d-flex justify-content-between"><strong>Tổng thanh toán</strong><strong class="text-primary">${order.total.toLocaleString()} VND</strong></div></div>`;
+  });
+  html += `<div class="mt-3"><button class="btn btn-danger" onclick="clearOrderHistory()">🗑 Xóa lịch sử tạm thời</button></div>`;
+  historyList.innerHTML = html;
+}
+
+// ---------------------------
+// Clear order history (user -> server, guest -> localStorage)
+// ---------------------------
+async function clearOrderHistory() {
+  if (!confirm('Bạn có chắc muốn xóa toàn bộ lịch sử đơn hàng không?')) return;
+  if (currentUser && currentUser.username) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders/clear/${currentUser.username}`, { method: 'DELETE' });
+      if (res.ok) alert('✅ Đã xóa toàn bộ lịch sử vĩnh viễn!');
+      else alert('❌ Xóa lịch sử thất bại trên server.');
+    } catch (err) {
+      console.error(err); alert('❌ Lỗi khi xóa lịch sử trên server.');
+    }
+  } else {
+    localStorage.removeItem('guestOrderHistory'); orderHistory = []; alert('✅ Đã xóa lịch sử tạm thời!');
+  }
+  displayOrderHistory();
+}
+
+// ---------------------------
+// Init
+// ---------------------------
 document.addEventListener('DOMContentLoaded', function() {
   checkAPIConnection();
   loadMenuFromAPI();
-  
+
+  // === KHÔI PHỤC PHIÊN ĐĂNG NHẬP ===
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      
+      // Cập nhật UI (giống như trong hàm login)
+      const auth = document.getElementById('authSection'); if (auth) auth.style.display = 'none';
+      const userSec = document.getElementById('userSection'); if (userSec) userSec.style.display = 'flex';
+      const unameEl = document.getElementById('username'); if (unameEl) unameEl.textContent = currentUser.username;
+      
+      // Tải các đơn hàng chờ CỦA NGƯI DÙNG NÀY
+      loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+      console.log('Restored session for user:', currentUser.username);
+      
+      // 🌟 BẮT ĐẦU KIỂM TRA TRẠNG THÁI SESSION ĐỊNH KỲ 🌟
+      if (sessionCheckIntervalId) clearInterval(sessionCheckIntervalId);
+      sessionCheckIntervalId = setInterval(checkSessionStatus, 10000); 
+
+    } catch (e) {
+      console.error('Failed to parse saved user, logging out.', e);
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      // Tải đơn hàng chờ của guest (vì khôi phục lỗi)
+      loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+    }
+  } else {
+    // Không có user, tải đơn hàng chờ của guest
+    loadPendingForCurrentUser(); // Hàm này đã được cập nhật để lọc đơn 0đ
+  }
+  // ===================================
+
+  // --- KHÔI PHỤC ĐƠN MANG VỀ CHỜ THANH TOÁN ---
+  const pendingTakeawayRaw = localStorage.getItem(PENDING_TAKEAWAY_KEY);
+  if (pendingTakeawayRaw) {
+    try {
+      const pendingData = JSON.parse(pendingTakeawayRaw);
+      createdOrderId = pendingData.orderId;
+      currentOrder = pendingData.items; // Khôi phục giỏ hàng
+      discountApplied = pendingData.discountApplied;
+      discountCode = pendingData.discountCode;
+
+      if (confirm(`⚠️ Đã phát hiện đơn hàng mang về #${createdOrderId} chưa hoàn tất thanh toán (cho khách hàng ${pendingData.customerName || 'Vô danh'}). Bạn có muốn tiếp tục?`)) {
+        // Khôi phục hiển thị trên trang thanh toán
+        document.getElementById('paymentTotal').textContent = pendingData.total.toLocaleString() + ' VND';
+        document.getElementById('displayOrderId').textContent = '#' + createdOrderId;
+        
+        // Cần khôi phục cả orderType để proceedToPayment biết đây là đơn mang về
+        orderType = 'takeaway';
+        showPage('payment');
+        // Khôi phục các giá trị trong form khách hàng (cho giao diện)
+        const customerNameInput = document.getElementById('customerName');
+        const customerPhoneInput = document.getElementById('customerPhone');
+        if (customerNameInput) customerNameInput.value = pendingData.customerName || '';
+        if (customerPhoneInput) customerPhoneInput.value = pendingData.customerPhone || '';
+        updateOrderSummary(); // Cập nhật lại summary dựa trên currentOrder được khôi phục
+      } else {
+        // Nếu người dùng chọn không tiếp tục, xóa trạng thái cục bộ VÀ HỦY TRÊN SERVER
+        alert(`Đang hủy đơn hàng mang về #${createdOrderId} trên Server...`);
+        cancelOrderOnServer(createdOrderId); // Hủy trên Server
+        clearPendingTakeaway();
+        currentOrder = []; // Xóa giỏ hàng đã khôi phục (vì người dùng hủy)
+        discountApplied = 0;
+        discountCode = '';
+        updateOrderSummary();
+      }
+    } catch (e) {
+      console.error('Failed to restore pending takeaway payment:', e);
+      clearPendingTakeaway();
+    }
+  }
+  // ===================================
+
+
+  // Load guest history (giữ nguyên)
+  const guestHistory = localStorage.getItem('guestOrderHistory');
+  if (guestHistory) {
+    try { orderHistory = JSON.parse(guestHistory); } catch { orderHistory = []; localStorage.removeItem('guestOrderHistory'); }
+  }
+
+  // Card inputs formatting (giữ nguyên)
   const cardNumberInput = document.getElementById('cardNumber');
   if (cardNumberInput) {
     cardNumberInput.addEventListener('input', function(e) {
       let value = e.target.value.replace(/\s/g, '');
-      let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-      e.target.value = formattedValue;
+      let formatted = value.match(/.{1,4}/g)?.join(' ') || value;
+      e.target.value = formatted;
     });
   }
-  
   const cardExpiryInput = document.getElementById('cardExpiry');
   if (cardExpiryInput) {
     cardExpiryInput.addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, '');
-      if (value.length >= 2) {
-        value = value.slice(0, 2) + '/' + value.slice(2, 4);
-      }
+      if (value.length >= 2) value = value.slice(0,2) + '/' + value.slice(2,4);
       e.target.value = value;
     });
   }
 });
+
+function togglePassword(inputId, button) {
+  const input = document.getElementById(inputId);
+  const eyeIcon = button.querySelector('.eye-icon');
+  
+  if (input.type === 'password') {
+    input.type = 'text';
+    eyeIcon.textContent = '🙈'; 
+  } else {
+    input.type = 'password';
+    eyeIcon.textContent = '👁️';
+  }
+}
+
+// ===============================================
+// LOGIC MỚI: KIỂM TRA TRẠNG THÁI TÀI KHOẢN ĐỊNH KỲ
+// ===============================================
+
+function checkSessionStatus() {
+    if (!currentUser || !currentUser.username) return; 
+
+    fetch(`${API_BASE_URL}/users/${currentUser.username}`)
+        .then(response => {
+            if (response.status === 404) {
+                // Nếu user không tồn tại, coi như đã bị vô hiệu hóa/xóa
+                return { enabled: false }; 
+            }
+            return response.json();
+        })
+        .then(user => {
+            if (user && !user.enabled) {
+                alert("Thông báo: Tài khoản của bạn đã bị vô hiệu hóa bởi Quản trị viên và sẽ tự động đăng xuất.");
+                // Gọi hàm logout để xử lý việc xóa session và chuyển hướng
+                logout();                 
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi kiểm tra trạng thái phiên làm việc:', error);
+            // Tiếp tục chạy định kỳ nếu lỗi kết nối
+        });
+}

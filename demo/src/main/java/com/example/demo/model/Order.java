@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore; 
 
 @Entity
 @Table(name = "orders") 
@@ -21,6 +22,12 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<OrderDetail> orderDetails;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "username") 
+    @JsonIgnore 
+    private User user;
 
     public Order() {
         this.orderDetails = new ArrayList<>();
@@ -49,6 +56,15 @@ public class Order {
     public void setOrderDate(Date orderDate) { this.orderDate = orderDate; }
     public void setStatus(String status) { this.status = status; }
     public void setTotal(double total) { this.total = total; }
+    
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 
     public void addOrderDetail(OrderDetail detail) {
         orderDetails.add(detail);
@@ -68,10 +84,13 @@ public class Order {
 
     @Override
     public String toString() {
+        String userInfo = (user != null) ? ", user=" + user.getUsername() : "";
         return "Order{" +
                 "orderId=" + orderId +
+                ", orderDate=" + orderDate +
                 ", status='" + status + '\'' +
                 ", total=" + total +
+                userInfo +
                 '}';
     }
 }
