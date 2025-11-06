@@ -25,8 +25,10 @@ Phần mềm cho phép **người dùng** dễ dàng đặt bàn, gọi món, th
 
 | Họ và Tên | Mã số sinh viên | Vai trò |
 |------------|-----------------|----------|
-| **Nguyễn Quang Hưng** | 23010103 | Lập trình , xây dựng và triển khai hệ thống |
-| **Lều Trung Hiếu** | 23010142 |  Phân tích nghiệp vụ, xử lý logic và thiết kế mô hình cơ sở dữ liệu. |
+| **Nguyễn Quang Hưng** | 23010103 | lập trình , viết báo cáo, xây dựng và triển khai hệ
+thống.  |
+| **Lều Trung Hiếu** | 23010142 | Phân tích nghiệp vụ, xử lý logics và thiết kế mô hình cơ 
+sở dữ liệu , viết readme. |
 
 ---
 
